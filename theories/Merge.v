@@ -3,7 +3,7 @@
 Require Import Coq.Lists.List Coq.Sorting.Permutation.
 
 From Coq Require Export Morphisms RelationClasses Setoid Program.Equality.
-From ITree Require Export ITree ITreeFacts Eq.Rutt Props.Divergence Props.Finite.
+From ITree Require Export ITree ITreeFacts Eq.Rutt Props.Infinite Props.Finite.
 From Paco Require Import paco.
 From Coq Require Export Eqdep EqdepFacts.
 Require Import Lia.
