@@ -4,6 +4,7 @@ From ITree Require Export ITree.
 From Paco Require Import paco.
 Require Export Refinement.
 Require Import Merge.
+Require Import MergePartial.
 
 Import Monads.
 Import MonadNotation.
@@ -16,7 +17,7 @@ Lemma padded_refines_ret_lr E1 E2 R1 R2 RE REAns RR r1 r2 :
   (RR r1 r2 : Prop) ->
   @padded_refines E1 E2 R1 R2 RE REAns RR (Ret r1) (Ret r2).
 Proof.
-  intros Hr. red. repeat rewrite pad_ret. pstep. constructor. auto.
+  apply padded_refines_ret.
 Qed.
 
 Lemma padded_refines_vis_lr E1 E2 R1 R2 A B
@@ -26,9 +27,7 @@ Lemma padded_refines_vis_lr E1 E2 R1 R2 A B
   (forall a b, (REAns A B e1 e2 a b : Prop) -> padded_refines RE REAns RR (k1 a) (k2 b) ) ->
   padded_refines RE REAns RR (Vis (Spec_vis e1) k1) (Vis (Spec_vis e2) k2).
 Proof.
-  unfold padded_refines. setoid_rewrite pad_vis. intros.
-  pstep. constructor; auto. intros. left. pstep. constructor.
-  left. eapply H0; auto.
+  apply padded_refines_vis.
 Qed.
 
 Lemma padded_spec_exists_r E1 E2 R1 R2 A

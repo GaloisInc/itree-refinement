@@ -5,3 +5,5 @@ theories/Padded.v
 theories/Refinement.v
 theories/ConvergentRefinement.v
 theories/Merge.v
+theories/MergePartial.v
+theories/Automation.v
