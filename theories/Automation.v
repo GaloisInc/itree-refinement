@@ -5,6 +5,13 @@ From Paco Require Import paco.
 Require Export Refinement.
 Require Import Merge.
 
+Import Monads.
+Import MonadNotation.
+Local Open Scope monad_scope.
+
+(* FIXME: What is the right way to fully simplify a `subevent` call? *)
+Ltac simpl_subevent := cbv [ subevent resum ReSum_id Id_IFun id_ ].
+
 
 (** * Basic Refinement Lemmas *)
 
@@ -15,10 +22,10 @@ Proof.
   intros Hr. red. repeat rewrite pad_ret. pstep. constructor. auto.
 Qed.
 
-Lemma padded_refines_vis_lr E1 E2 R1 R2 A B 
+Lemma padded_refines_vis_lr E1 E2 R1 R2 A B
         RE REAns RR (e1 : E1 A) (e2 : E2 B)
-        (k1 : A -> itree_spec E1 R1) (k2 : B -> itree_spec E2 R2) : 
-  (RE A B e1 e2 : Prop) -> 
+        (k1 : A -> itree_spec E1 R1) (k2 : B -> itree_spec E2 R2) :
+  (RE A B e1 e2 : Prop) ->
   (forall a b, (REAns A B e1 e2 a b : Prop) -> padded_refines RE REAns RR (k1 a) (k2 b) ) ->
   padded_refines RE REAns RR (Vis (Spec_vis e1) k1) (Vis (Spec_vis e2) k2).
 Proof.
@@ -27,22 +34,38 @@ Proof.
   left. eapply H0; auto.
 Qed.
 
-Lemma padded_refines_trigger_lr E1 E2 R1 R2
-      RE REAns RR (e1 : E1 R1) (e2 : E2 R2) :
-  (RE R1 R2 e1 e2 : Prop) ->
-  (forall r1 r2, (REAns R1 R2 e1 e2 r1 r2: Prop) -> RR r1 r2 : Prop) ->
-  padded_refines RE REAns RR (ITree.trigger (Spec_vis e1)) (ITree.trigger (Spec_vis e2)).
+Lemma padded_spec_exists_r E1 E2 R1 R2 A
+      RE REAns RR (phi : itree_spec E1 R1) (kphi : A -> itree_spec E2 R2) a :
+  padded_refines RE REAns RR phi (kphi a) ->
+  padded_refines RE REAns RR phi (Vis Spec_exists kphi).
 Proof.
-  intros. apply padded_refines_vis_lr; eauto.
-  intros. apply padded_refines_ret_lr; eauto.
+  setoid_rewrite <- bind_trigger.
+  apply padded_spec_exists_elim.
+Qed.
+Lemma padded_spec_exists_l E1 E2 R1 R2 A
+      RE REAns RR (phi : itree_spec E2 R2) (kphi : A -> itree_spec E1 R1) :
+  (forall a, padded_refines RE REAns RR (kphi a) phi) ->
+  padded_refines RE REAns RR (Vis Spec_exists kphi) phi.
+Proof.
+  setoid_rewrite <- bind_trigger.
+  apply padded_spec_exists_eliml.
 Qed.
 
-Lemma padded_refines_if_l E1 E2 RE REAns R1 R2 RR (t1 t2 : itree_spec E1 R1) (t3 : itree_spec E2 R2) b :
-  (b = true  -> padded_refines RE REAns RR t1 t3) ->
-  (b = false -> padded_refines RE REAns RR t2 t3) ->
-  padded_refines RE REAns RR (if b then t1 else t2) t3.
+Lemma padded_spec_forall_r E1 E2 R1 R2 A
+      RE REAns RR (phi : itree_spec E1 R1) (kphi : A -> itree_spec E2 R2) :
+  (forall a, padded_refines RE REAns RR phi (kphi a)) ->
+  padded_refines RE REAns RR phi (Vis Spec_forall kphi).
 Proof.
-  intros. destruct b; eauto.
+  setoid_rewrite <- bind_trigger.
+  apply padded_spec_forall_elim.
+Qed.
+Lemma padded_spec_forall_l E1 E2 R1 R2 A
+      RE REAns RR (phi : itree_spec E2 R2) (kphi : A -> itree_spec E1 R1) a :
+  padded_refines RE REAns RR (kphi a) phi ->
+  padded_refines RE REAns RR (Vis Spec_forall kphi) phi.
+Proof.
+  setoid_rewrite <- bind_trigger.
+  apply padded_spec_forall_eliml.
 Qed.
 
 Lemma padded_refines_if_r E1 E2 RE REAns R1 R2 RR (t1 : itree_spec E1 R1) (t2 t3: itree_spec E2 R2) b :
@@ -51,6 +74,77 @@ Lemma padded_refines_if_r E1 E2 RE REAns R1 R2 RR (t1 : itree_spec E1 R1) (t2 t3
   padded_refines RE REAns RR t1 (if b then t2 else t3).
 Proof.
   intros. destruct b; eauto.
+Qed.
+Lemma padded_refines_if_l E1 E2 RE REAns R1 R2 RR (t1 t2 : itree_spec E1 R1) (t3 : itree_spec E2 R2) b :
+  (b = true  -> padded_refines RE REAns RR t1 t3) ->
+  (b = false -> padded_refines RE REAns RR t2 t3) ->
+  padded_refines RE REAns RR (if b then t1 else t2) t3.
+Proof.
+  intros. destruct b; eauto.
+Qed.
+
+Lemma padded_refines_ret_bind_r E1 E2 R1 R2 A
+      RE REAns RR (phi : itree_spec E1 R1) r (kphi : A -> itree_spec E2 R2) :
+  padded_refines RE REAns RR phi (kphi r) ->
+  padded_refines RE REAns RR phi (Ret r >>= kphi).
+Proof.
+  setoid_rewrite bind_ret_l; eauto.
+Qed.
+Lemma padded_refines_ret_bind_l E1 E2 R1 R2 A
+      RE REAns RR (phi : itree_spec E2 R2) r (kphi : A -> itree_spec E1 R1) :
+  padded_refines RE REAns RR (kphi r) phi ->
+  padded_refines RE REAns RR (Ret r >>= kphi) phi.
+Proof.
+  setoid_rewrite bind_ret_l; eauto.
+Qed.
+
+Lemma padded_refines_trigger_bind_r E1 E2 R1 R2 A
+      RE REAns RR (phi : itree_spec E1 R1) e (kphi : A -> itree_spec E2 R2) :
+  padded_refines RE REAns RR phi (Vis e kphi) ->
+  padded_refines RE REAns RR phi (ITree.trigger e >>= kphi).
+Proof.
+  setoid_rewrite bind_trigger; eauto.
+Qed.
+Lemma padded_refines_trigger_bind_l E1 E2 R1 R2 A
+      RE REAns RR (phi : itree_spec E2 R2) e (kphi : A -> itree_spec E1 R1) :
+  padded_refines RE REAns RR (Vis e kphi) phi ->
+  padded_refines RE REAns RR (ITree.trigger e >>= kphi) phi.
+Proof.
+  setoid_rewrite bind_trigger; eauto.
+Qed.
+
+Lemma padded_refines_vis_bind_r E1 E2 R1 R2 A1 A2
+      RE REAns RR (phi : itree_spec E1 R1) e
+      (kphi1 : A1 -> itree_spec E2 A2) (kphi2 : A2 -> itree_spec E2 R2) :
+  padded_refines RE REAns RR phi (Vis e (fun a => kphi1 a >>= kphi2)) ->
+  padded_refines RE REAns RR phi (Vis e kphi1 >>= kphi2).
+Proof.
+  setoid_rewrite bind_vis; eauto.
+Qed.
+Lemma padded_refines_vis_bind_l E1 E2 R1 R2 A1 A2
+      RE REAns RR (phi : itree_spec E2 R2) e
+      (kphi1 : A1 -> itree_spec E1 A2) (kphi2 : A2 -> itree_spec E1 R1) :
+  padded_refines RE REAns RR (Vis e (fun a => kphi1 a >>= kphi2)) phi ->
+  padded_refines RE REAns RR (Vis e kphi1 >>= kphi2) phi.
+Proof.
+  setoid_rewrite bind_vis; eauto.
+Qed.
+
+Lemma padded_refines_bind_bind_r E1 E2 R1 R2 A1 A2
+      RE REAns RR (phi1 : itree_spec E1 R1) (phi2 : itree_spec E2 A1)
+      (kphi1 : A1 -> itree_spec E2 A2) (kphi2 : A2 -> itree_spec E2 R2) :
+  padded_refines RE REAns RR phi1 (phi2 >>= (fun a => kphi1 a >>= kphi2)) ->
+  padded_refines RE REAns RR phi1 ((phi2 >>= kphi1) >>= kphi2).
+Proof.
+  setoid_rewrite bind_bind; eauto.
+Qed.
+Lemma padded_refines_bind_bind_l E1 E2 R1 R2 A1 A2
+      RE REAns RR (phi1 : itree_spec E2 A1) (phi2 : itree_spec E1 R1)
+      (kphi1 : A1 -> itree_spec E2 A2) (kphi2 : A2 -> itree_spec E2 R2) :
+  padded_refines RE REAns RR (phi1 >>= (fun a => kphi1 a >>= kphi2)) phi2 ->
+  padded_refines RE REAns RR ((phi1 >>= kphi1) >>= kphi2) phi2.
+Proof.
+  setoid_rewrite bind_bind; eauto.
 Qed.
 
 
@@ -120,12 +214,14 @@ Hint Extern 999 (RelGoal _) =>
 
 (** * IntroArg Definition and Hints *)
 
-Inductive ArgName := Any | RetAny | Hyp | If.
+Inductive ArgName := Any | RetAny | Hyp | Exists | Forall | If.
 Ltac argName n :=
   match n with
   | Any      => fresh "a"
   | RetAny   => fresh "r"
   | Hyp      => fresh "H"
+  | Exists   => fresh "e_exists"
+  | Forall   => fresh "e_forall"
   | If       => fresh "e_if"
   end.
 
@@ -238,7 +334,6 @@ Hint Extern 101 (RelGoal (sum_relE _ _ _ _ (inl1 _) (inl1 _))) =>
 Hint Extern 101 (RelGoal (sum_relE _ _ _ _ (inr1 _) (inr1 _))) =>
   simple apply RelGoal_sum_relE_inr : refines.
 
-
 Lemma RelGoal_sum_relEAns_inl E1 E2 F1 F2 (REE : relationEAns E1 E2) (REF : relationEAns F1 F2)
                               A B e1 e2 a b :
   RelGoal (REE A B e1 e2 a b) ->
@@ -285,22 +380,6 @@ Hint Extern 101 (RelGoal (dep_prod_rel _ _ _ _)) =>
 
 (** * Basic Refinement Hints *)
 
-Definition padded_refines_if_l_IntroArg E1 E2 RE REAns R1 R2 RR t1 t2 t3 b :
-  (IntroArg If (b = true) (fun _ => padded_refines RE REAns RR t1 t3)) ->
-  (IntroArg If (b = false) (fun _ => padded_refines RE REAns RR t2 t3)) ->
-  padded_refines RE REAns RR (if b then t1 else t2) t3 :=
-  padded_refines_if_l E1 E2 RE REAns R1 R2 RR t1 t2 t3 b.
-Definition padded_refines_if_r_IntroArg E1 E2 RE REAns R1 R2 RR t1 t2 t3 b :
-  (IntroArg If (b = true) (fun _ => padded_refines RE REAns RR t1 t2)) ->
-  (IntroArg If (b = false) (fun _ => padded_refines RE REAns RR t1 t3)) ->
-  padded_refines RE REAns RR t1 (if b then t2 else t3) :=
-  padded_refines_if_r E1 E2 RE REAns R1 R2 RR t1 t2 t3 b.
-
-Hint Extern 101 (padded_refines _ _ _ (if _ then _ else _) _) =>
-  apply padded_refines_if_l_IntroArg : refines.
-Hint Extern 101 (padded_refines _ _ _ _ (if _ then _ else _)) =>
-  apply padded_refines_if_r_IntroArg : refines.
-
 Definition padded_refines_ret_lr_IntroArg E1 E2 R1 R2 RE REAns RR r1 r2 :
   (RelGoal (RR r1 r2 : Prop)) ->
   @padded_refines E1 E2 R1 R2 RE REAns RR (Ret r1) (Ret r2) :=
@@ -319,20 +398,119 @@ Definition padded_refines_vis_lr_IntroArg E1 E2 R1 R2 A B
   padded_refines RE REAns RR (Vis (Spec_vis e1) k1) (Vis (Spec_vis e2) k2) :=
   padded_refines_vis_lr E1 E2 R1 R2 A B RE REAns RR e1 e2 k1 k2.
 
-Hint Extern 104 (padded_refines _ _ _ (Vis (Spec_vis _) _) (Vis (Spec_vis _) _)) =>
+Hint Extern 103 (padded_refines _ _ _ (Vis (Spec_vis _) _) (Vis (Spec_vis _) _)) =>
   apply padded_refines_vis_lr_IntroArg : refines.
 
-Definition padded_refines_trigger_lr_IntroArg E1 E2 R1 R2
-      RE REAns RR (e1 : E1 R1) (e2 : E2 R2) :
-  (RelGoal (RE R1 R2 e1 e2 : Prop)) ->
-  (IntroArg RetAny R1 (fun r1 => IntroArg RetAny R2 (fun r2 =>
-     IntroArg Hyp (REAns R1 R2 e1 e2 r1 r2 : Prop) (fun _ =>
-       RelGoal (RR r1 r2 : Prop))))) ->
-  padded_refines RE REAns RR (ITree.trigger (Spec_vis e1)) (ITree.trigger (Spec_vis e2)) :=
-  padded_refines_trigger_lr E1 E2 R1 R2 RE REAns RR e1 e2.
+Definition padded_spec_exists_l_IntroArg E1 E2 R1 R2 A
+      RE REAns RR (phi : itree_spec E2 R2) (kphi : A -> itree_spec E1 R1) :
+  (IntroArg Exists A (fun a => padded_refines RE REAns RR (kphi a) phi)) ->
+  padded_refines RE REAns RR (Vis Spec_exists kphi) phi :=
+  padded_spec_exists_l E1 E2 R1 R2 A RE REAns RR phi kphi.
+Definition padded_spec_forall_r_IntroArg E1 E2 R1 R2 A
+      RE REAns RR (phi : itree_spec E1 R1) (kphi : A -> itree_spec E2 R2) :
+  (IntroArg Forall A (fun a => padded_refines RE REAns RR phi (kphi a))) ->
+  padded_refines RE REAns RR phi (Vis Spec_forall kphi) :=
+  padded_spec_forall_r E1 E2 R1 R2 A RE REAns RR phi kphi.
 
-Hint Extern 103 (padded_refines _ _ _ (ITree.trigger (Spec_vis _)) (ITree.trigger (Spec_vis _))) =>
-  apply padded_refines_trigger_lr_IntroArg : refines.
+Hint Extern 102 (padded_refines _ _ _ (Vis Spec_forall _)) =>
+  simple apply padded_spec_forall_l : refines.
+Hint Extern 102 (padded_refines _ _ _ _ (Vis Spec_exists _)) =>
+  simple apply padded_spec_exists_r : refines.
+
+Hint Extern 103 (padded_refines _ _ _ _ (Vis Spec_exists _)) =>
+  simple eapply padded_spec_exists_r : refines.
+Hint Extern 103 (padded_refines _ _ _ (Vis Spec_forall _) _) =>
+  simple eapply padded_spec_forall_l : refines.
+
+Definition padded_refines_if_r_IntroArg E1 E2 RE REAns R1 R2 RR t1 t2 t3 b :
+  (IntroArg If (b = true) (fun _ => padded_refines RE REAns RR t1 t2)) ->
+  (IntroArg If (b = false) (fun _ => padded_refines RE REAns RR t1 t3)) ->
+  padded_refines RE REAns RR t1 (if b then t2 else t3) :=
+  padded_refines_if_r E1 E2 RE REAns R1 R2 RR t1 t2 t3 b.
+Definition padded_refines_if_l_IntroArg E1 E2 RE REAns R1 R2 RR t1 t2 t3 b :
+  (IntroArg If (b = true) (fun _ => padded_refines RE REAns RR t1 t3)) ->
+  (IntroArg If (b = false) (fun _ => padded_refines RE REAns RR t2 t3)) ->
+  padded_refines RE REAns RR (if b then t1 else t2) t3 :=
+  padded_refines_if_l E1 E2 RE REAns R1 R2 RR t1 t2 t3 b.
+
+Hint Extern 101 (padded_refines _ _ _ _ (if _ then _ else _)) =>
+  apply padded_refines_if_r_IntroArg : refines.
+Hint Extern 101 (padded_refines _ _ _ (if _ then _ else _) _) =>
+  apply padded_refines_if_l_IntroArg : refines.
+
+Hint Extern 101 (padded_refines _ _ _ _ (Ret _ >>= _)) =>
+  simple apply padded_refines_ret_bind_r : refines.
+Hint Extern 101 (padded_refines _ _ _ (Ret _ >>= _) _) =>
+  simple apply padded_refines_ret_bind_l : refines.
+
+Hint Extern 101 (padded_refines _ _ _ _ (ITree.trigger _ >>= _)) =>
+  simple apply padded_refines_trigger_bind_r; simpl_subevent : refines.
+Hint Extern 101 (padded_refines _ _ _ (ITree.trigger _ >>= _) _) =>
+  simple apply padded_refines_trigger_bind_l; simpl_subevent : refines.
+
+Hint Extern 101 (padded_refines _ _ _ _ (Vis _ _ >>= _)) =>
+  simple apply padded_refines_vis_bind_r : refines.
+Hint Extern 101 (padded_refines _ _ _ (Vis _ _ >>= _) _) =>
+  simple apply padded_refines_vis_bind_l : refines.
+
+Hint Extern 101 (padded_refines _ _ _ _ ((_ >>= _) >>= _)) =>
+  simple apply padded_refines_bind_bind_r : refines.
+Hint Extern 101 (padded_refines _ _ _ ((_ >>= _) >>= _) _) =>
+  simple apply padded_refines_bind_bind_l : refines.
+
+Definition padded_refines_trigger_r E1 E2 R1 R2 RE REAns RR phi e :
+  padded_refines RE REAns RR phi (Vis e (fun x => Ret x)) ->
+  @padded_refines E1 E2 R1 R2 RE REAns RR phi (ITree.trigger e) :=
+  fun r => r.
+Definition padded_refines_trigger_l E1 E2 R1 R2 RE REAns RR phi e :
+  padded_refines RE REAns RR (Vis e (fun x => Ret x)) phi ->
+  @padded_refines E1 E2 R1 R2 RE REAns RR (ITree.trigger e) phi :=
+  fun r => r.
+
+Hint Extern 101 (padded_refines _ _ _ _ (ITree.trigger _)) =>
+  simple apply padded_refines_trigger_r; simpl_subevent : refines.
+Hint Extern 101 (padded_refines _ _ _ (ITree.trigger _) _) =>
+  simple apply padded_refines_trigger_l; simpl_subevent : refines.
+
+(* assert_spec _ := trigger _ ;; _ *)
+Hint Extern 101 (padded_refines _ _ _ _ (assert_spec _)) =>
+  apply padded_refines_trigger_bind_r : refines.
+Hint Extern 101 (padded_refines _ _ _ (assert_spec _) _) =>
+  apply padded_refines_trigger_bind_l : refines.
+Hint Extern 101 (padded_refines _ _ _ _ (assert_spec _ >>= _)) =>
+  apply padded_refines_bind_bind_r : refines.
+Hint Extern 101 (padded_refines _ _ _ (assert_spec _ >>= _) _) =>
+  apply padded_refines_bind_bind_l : refines.
+
+(* assume_spec _ := trigger _ ;; _ *)
+Hint Extern 101 (padded_refines _ _ _ _ (assume_spec _)) =>
+  apply padded_refines_trigger_bind_r; simpl_subevent : refines.
+Hint Extern 101 (padded_refines _ _ _ (assume_spec _) _) =>
+  apply padded_refines_trigger_bind_l; simpl_subevent : refines.
+Hint Extern 101 (padded_refines _ _ _ _ (assume_spec _ >>= _)) =>
+  apply padded_refines_bind_bind_r : refines.
+Hint Extern 101 (padded_refines _ _ _ (assume_spec _ >>= _) _) =>
+  apply padded_refines_bind_bind_l : refines.
+
+(* spec_exists _ := trigger _ *)
+Hint Extern 101 (padded_refines _ _ _ _ (spec_exists _)) =>
+  apply padded_refines_trigger_r; simpl_subevent : refines.
+Hint Extern 101 (padded_refines _ _ _ (spec_exists _) _) =>
+  apply padded_refines_trigger_l; simpl_subevent : refines.
+Hint Extern 101 (padded_refines _ _ _ _ (spec_exists _ >>= _)) =>
+  apply padded_refines_trigger_bind_r; simpl_subevent : refines.
+Hint Extern 101 (padded_refines _ _ _ (spec_exists _ >>= _) _) =>
+  apply padded_refines_trigger_bind_l; simpl_subevent : refines.
+
+(* spec_forall _ := trigger _ *)
+Hint Extern 101 (padded_refines _ _ _ _ (spec_forall _)) =>
+  apply padded_refines_trigger_r; simpl_subevent : refines.
+Hint Extern 101 (padded_refines _ _ _ (spec_forall _) _) =>
+  apply padded_refines_trigger_l; simpl_subevent : refines.
+Hint Extern 101 (padded_refines _ _ _ _ (spec_forall _ >>= _)) =>
+  apply padded_refines_trigger_bind_r; simpl_subevent : refines.
+Hint Extern 101 (padded_refines _ _ _ (spec_forall _ >>= _) _) =>
+  apply padded_refines_trigger_bind_l; simpl_subevent : refines.
 
 
 (** * Refinement Hints About Recursion *)
@@ -350,7 +528,7 @@ Hint Extern 999 (Postcondition _ _ _ _ _) => shelve : prepostcond.
 Definition padded_refines_rec_lr_IntroArg
            E1 E2 A1 A2 R1 R2 RE REAns (RR : R1 -> R2 -> Prop) body1 body2 a1 a2
            (precond : IntroArg Any A1 (fun a1 => IntroArg Any A2 (fun a2 => Precondition a1 a2)))
-           (postcond : IntroArg Any A1 (fun a1 => IntroArg Any A2 (fun a1 =>
+           (postcond : IntroArg Any A1 (fun a1 => IntroArg Any A2 (fun a2 =>
                        IntroArg RetAny R1 (fun r1 => IntroArg RetAny R2 (fun r2 =>
                        IntroArg Hyp (RR r1 r2) (fun H => Postcondition a1 a2 r1 r2 H)))))) :
   precond a1 a2 ->
@@ -375,7 +553,7 @@ Hint Extern 101 (padded_refines _ _ _ (rec_fix_spec _ _) (rec_fix_spec _ _)) =>
   padded_refines_rec : refines.
 
 Hint Extern 101 (padded_refines _ _ _ (call_spec _) (call_spec _)) =>
-  apply padded_refines_trigger_lr_IntroArg : refines.
+  apply padded_refines_trigger_l, padded_refines_trigger_r : refines.
 
 
 (** * Tactics *)
@@ -412,4 +590,12 @@ Proof.
   - exact True.
   - easy.
   - prove_refinement.
+Qed.
+
+Lemma test_exists E (x : Z) :
+  @padded_refines E E Z Z eqE eqEAns eq
+                  (if x >=? 0 then Ret x else Ret (-1 * x))
+                  (r <- spec_exists Z ;; Ret r).
+Proof.
+  prove_refinement.
 Qed.
