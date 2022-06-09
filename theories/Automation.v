@@ -9,9 +9,6 @@ Import Monads.
 Import MonadNotation.
 Local Open Scope monad_scope.
 
-(* FIXME: What is the right way to fully simplify a `subevent` call? *)
-Ltac simpl_subevent := cbv [ subevent resum ReSum_id Id_IFun id_ ].
-
 
 (** * Basic Refinement Lemmas *)
 
@@ -400,6 +397,12 @@ Definition padded_refines_vis_lr_IntroArg E1 E2 R1 R2 A B
 
 Hint Extern 103 (padded_refines _ _ _ (Vis (Spec_vis _) _) (Vis (Spec_vis _) _)) =>
   apply padded_refines_vis_lr_IntroArg : refines.
+Hint Extern 103 (padded_refines _ _ _ (vis (Spec_vis _) _) (Vis (Spec_vis _) _)) =>
+  apply padded_refines_vis_lr_IntroArg : refines.
+Hint Extern 103 (padded_refines _ _ _ (Vis (Spec_vis _) _) (vis (Spec_vis _) _)) =>
+  apply padded_refines_vis_lr_IntroArg : refines.
+Hint Extern 103 (padded_refines _ _ _ (vis (Spec_vis _) _) (vis (Spec_vis _) _)) =>
+  apply padded_refines_vis_lr_IntroArg : refines.
 
 Definition padded_spec_exists_l_IntroArg E1 E2 R1 R2 A
       RE REAns RR (phi : itree_spec E2 R2) (kphi : A -> itree_spec E1 R1) :
@@ -414,13 +417,21 @@ Definition padded_spec_forall_r_IntroArg E1 E2 R1 R2 A
 
 Hint Extern 102 (padded_refines _ _ _ (Vis Spec_forall _)) =>
   simple apply padded_spec_forall_l : refines.
+Hint Extern 102 (padded_refines _ _ _ (vis Spec_forall _)) =>
+  apply padded_spec_forall_l : refines.
 Hint Extern 102 (padded_refines _ _ _ _ (Vis Spec_exists _)) =>
   simple apply padded_spec_exists_r : refines.
+Hint Extern 102 (padded_refines _ _ _ _ (vis Spec_exists _)) =>
+  apply padded_spec_exists_r : refines.
 
 Hint Extern 103 (padded_refines _ _ _ _ (Vis Spec_exists _)) =>
   simple eapply padded_spec_exists_r : refines.
+Hint Extern 103 (padded_refines _ _ _ _ (vis Spec_exists _)) =>
+  eapply padded_spec_exists_r : refines.
 Hint Extern 103 (padded_refines _ _ _ (Vis Spec_forall _) _) =>
   simple eapply padded_spec_forall_l : refines.
+Hint Extern 103 (padded_refines _ _ _ (vis Spec_forall _) _) =>
+  eapply padded_spec_forall_l : refines.
 
 Definition padded_refines_if_r_IntroArg E1 E2 RE REAns R1 R2 RR t1 t2 t3 b :
   (IntroArg If (b = true) (fun _ => padded_refines RE REAns RR t1 t2)) ->
@@ -444,14 +455,18 @@ Hint Extern 101 (padded_refines _ _ _ (Ret _ >>= _) _) =>
   simple apply padded_refines_ret_bind_l : refines.
 
 Hint Extern 101 (padded_refines _ _ _ _ (ITree.trigger _ >>= _)) =>
-  simple apply padded_refines_trigger_bind_r; simpl_subevent : refines.
+  simple apply padded_refines_trigger_bind_r : refines.
 Hint Extern 101 (padded_refines _ _ _ (ITree.trigger _ >>= _) _) =>
-  simple apply padded_refines_trigger_bind_l; simpl_subevent : refines.
+  simple apply padded_refines_trigger_bind_l : refines.
 
 Hint Extern 101 (padded_refines _ _ _ _ (Vis _ _ >>= _)) =>
   simple apply padded_refines_vis_bind_r : refines.
+Hint Extern 101 (padded_refines _ _ _ _ (vis _ _ >>= _)) =>
+  apply padded_refines_vis_bind_r : refines.
 Hint Extern 101 (padded_refines _ _ _ (Vis _ _ >>= _) _) =>
   simple apply padded_refines_vis_bind_l : refines.
+Hint Extern 101 (padded_refines _ _ _ (vis _ _ >>= _) _) =>
+  apply padded_refines_vis_bind_l : refines.
 
 Hint Extern 101 (padded_refines _ _ _ _ ((_ >>= _) >>= _)) =>
   simple apply padded_refines_bind_bind_r : refines.
@@ -468,9 +483,9 @@ Definition padded_refines_trigger_l E1 E2 R1 R2 RE REAns RR phi e :
   fun r => r.
 
 Hint Extern 101 (padded_refines _ _ _ _ (ITree.trigger _)) =>
-  simple apply padded_refines_trigger_r; simpl_subevent : refines.
+  simple apply padded_refines_trigger_r : refines.
 Hint Extern 101 (padded_refines _ _ _ (ITree.trigger _) _) =>
-  simple apply padded_refines_trigger_l; simpl_subevent : refines.
+  simple apply padded_refines_trigger_l : refines.
 
 (* assert_spec _ := trigger _ ;; _ *)
 Hint Extern 101 (padded_refines _ _ _ _ (assert_spec _)) =>
@@ -484,9 +499,9 @@ Hint Extern 101 (padded_refines _ _ _ (assert_spec _ >>= _) _) =>
 
 (* assume_spec _ := trigger _ ;; _ *)
 Hint Extern 101 (padded_refines _ _ _ _ (assume_spec _)) =>
-  apply padded_refines_trigger_bind_r; simpl_subevent : refines.
+  apply padded_refines_trigger_bind_r : refines.
 Hint Extern 101 (padded_refines _ _ _ (assume_spec _) _) =>
-  apply padded_refines_trigger_bind_l; simpl_subevent : refines.
+  apply padded_refines_trigger_bind_l : refines.
 Hint Extern 101 (padded_refines _ _ _ _ (assume_spec _ >>= _)) =>
   apply padded_refines_bind_bind_r : refines.
 Hint Extern 101 (padded_refines _ _ _ (assume_spec _ >>= _) _) =>
@@ -494,23 +509,23 @@ Hint Extern 101 (padded_refines _ _ _ (assume_spec _ >>= _) _) =>
 
 (* spec_exists _ := trigger _ *)
 Hint Extern 101 (padded_refines _ _ _ _ (spec_exists _)) =>
-  apply padded_refines_trigger_r; simpl_subevent : refines.
+  apply padded_refines_trigger_r : refines.
 Hint Extern 101 (padded_refines _ _ _ (spec_exists _) _) =>
-  apply padded_refines_trigger_l; simpl_subevent : refines.
+  apply padded_refines_trigger_l : refines.
 Hint Extern 101 (padded_refines _ _ _ _ (spec_exists _ >>= _)) =>
-  apply padded_refines_trigger_bind_r; simpl_subevent : refines.
+  apply padded_refines_trigger_bind_r : refines.
 Hint Extern 101 (padded_refines _ _ _ (spec_exists _ >>= _) _) =>
-  apply padded_refines_trigger_bind_l; simpl_subevent : refines.
+  apply padded_refines_trigger_bind_l : refines.
 
 (* spec_forall _ := trigger _ *)
 Hint Extern 101 (padded_refines _ _ _ _ (spec_forall _)) =>
-  apply padded_refines_trigger_r; simpl_subevent : refines.
+  apply padded_refines_trigger_r : refines.
 Hint Extern 101 (padded_refines _ _ _ (spec_forall _) _) =>
-  apply padded_refines_trigger_l; simpl_subevent : refines.
+  apply padded_refines_trigger_l : refines.
 Hint Extern 101 (padded_refines _ _ _ _ (spec_forall _ >>= _)) =>
-  apply padded_refines_trigger_bind_r; simpl_subevent : refines.
+  apply padded_refines_trigger_bind_r : refines.
 Hint Extern 101 (padded_refines _ _ _ (spec_forall _ >>= _) _) =>
-  apply padded_refines_trigger_bind_l; simpl_subevent : refines.
+  apply padded_refines_trigger_bind_l : refines.
 
 
 (** * Refinement Hints About Recursion *)
