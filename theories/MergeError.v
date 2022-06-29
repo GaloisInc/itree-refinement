@@ -3,11 +3,12 @@
 Require Import Coq.Lists.List Coq.Sorting.Permutation.
 
 From Coq Require Export Morphisms RelationClasses Setoid Program.Equality.
+From Coq Require Export Wellfounded Arith.Wf_nat Arith.Compare_dec.
 From ITree Require Export ITree ITreeFacts Eq.Rutt Props.Infinite Props.Finite.
 From Paco Require Import paco.
 From Coq Require Export Eqdep EqdepFacts.
 Require Import Lia.
-Require Export Refinement Merge.
+Require Export Refinement Merge MergePartial Automation.
 
 Import Monads.
 Import MonadNotation.
@@ -43,15 +44,18 @@ Definition tail {E} `{errorE -< E} (l : list nat) : itree_spec E (list nat) :=
   | _ :: t => Ret t
   end.
 
+
+(** * Definitions *)
+
 Definition halve {E : Type -> Type} `{errorE -< E}: list nat -> itree_spec E (list nat * list nat) :=
-  rec_fix_spec (fun rec l1 => 
+  rec_fix_spec (fun rec l1 =>
                  b1 <- is_nil l1;;
                  if b1 : bool
                  then Ret (nil, nil)
-                 else l2 <- tail l1;; 
+                 else l2 <- tail l1;;
                       b2 <- is_nil l2;;
                       if b2 : bool
-                      then 
+                      then
                         Ret (l1, nil)
                       else
                         x <- head l1;;
@@ -84,13 +88,170 @@ Definition merge {E : Type -> Type} `{errorE -< E} : (list nat * list nat) -> it
                ).
 
 Definition sort {E : Type -> Type} `{errorE -< E} : list nat -> itree_spec E (list nat) :=
-  rec_fix_spec (fun rec l => 
+  rec_fix_spec (fun rec l =>
                   b <- is_nil l;;
                   if b : bool then
                     Ret nil
-                  else 
+                  else
                     '(l1, l2) <- halve l;;
                     l1s <- rec l1;;
                     l2s <- rec l2;;
                     merge (l1s, l2s)
                ).
+
+
+(** * Halve *)
+
+Definition halve_pre (l : list nat) : Prop := True.
+Definition halve_post (l : list nat) ( p : list nat * list nat) :=
+  let '(l1,l2) := p in
+  Permutation l (l1 ++ l2) /\
+    (length l1 >= length l2 /\ (length l > length l1 \/ 1 >= length l)).
+
+Definition dec_length (l1 l2 : list nat) :=
+  length l1 < length l2.
+
+Lemma halve_refines_total_spec {E} `{errorE -< E} l :
+  padded_refines_eq (E:=E) eq (halve l) (total_spec halve_pre halve_post l).
+Proof.
+  unfold halve, is_nil, head, tail.
+  prove_refinement.
+  - exact (a = a0).
+  - exact (halve_post a r).
+  - exact (dec_length a a0).
+  - apply well_founded_ltof.
+  - unfold halve_pre, halve_post, dec_length.
+    prove_refinement_continue.
+    all: repeat split; simpl; auto.
+    all: destruct H1 as [? []]; try lia.
+    + rewrite Permutation_app_comm. cbn.
+      rewrite H1. rewrite Permutation_app_comm. reflexivity.
+    + rewrite H1. repeat rewrite app_length. lia.
+    + rewrite Permutation_app_comm. cbn.
+      rewrite H1. rewrite Permutation_app_comm. reflexivity.
+    + repeat rewrite H1. repeat rewrite app_length. lia.
+Qed.
+
+
+(** * Merge *)
+
+Definition merge_pre (p : list nat * list nat) :=
+  let '(l1,l2) := p in
+  sorted l1 /\ sorted l2.
+Definition merge_post (p : list nat * list nat) (l : list nat) :=
+  let '(l1,l2) := p in
+  sorted l /\ Permutation l (l1 ++ l2).
+
+Definition dec_either_length (pr1 pr2 : list nat * list nat) :=
+  length (fst pr1) < length (fst pr2) /\ length (snd pr1) = length (snd pr2) \/
+  length (fst pr1) = length (fst pr2) /\ length (snd pr1) < length (snd pr2).
+
+Lemma wf_dec_either_length : well_founded dec_either_length.
+Proof.
+  apply wf_union.
+  - intros [z1 z2] [y1 y2] [] [x1 x2] []; simpl in *.
+    exists (z1, x2); simpl; split; try easy.
+    + rewrite <- H0. exact H2.
+    + rewrite H1. exact H.
+  - eapply wf_incl; [| apply well_founded_ltof ].
+    intros ? ? []. exact H.
+  - eapply wf_incl; [| apply well_founded_ltof ].
+    intros ? ? []. exact H0.
+Qed.
+
+Lemma sorted_cons_all x xs : sorted xs ->
+  (forall x', In x' xs -> x <= x') -> sorted (x :: xs).
+Proof.
+  destruct xs.
+  - constructor.
+  - constructor; eauto.
+    apply H0. left; reflexivity.
+Qed.
+
+Lemma sorted_fst_and_tail x y xs :
+  sorted (x :: y :: xs) -> sorted (x :: xs).
+Proof.
+  intro; inversion H; subst.
+  destruct xs.
+  - constructor.
+  - inversion H4; subst.
+    constructor; eauto.
+    transitivity y; eauto.
+Qed.
+
+Lemma sorted_head x xs :
+  sorted (x :: xs) -> (forall x', In x' xs -> x <= x').
+Proof.
+  revert x; induction xs; intros.
+  - contradiction H0.
+  - destruct H0; subst.
+    + inversion H; subst. eauto.
+    + apply IHxs; eauto.
+      eapply sorted_fst_and_tail; eauto.
+Qed.
+
+Lemma sorted_cons_perm_app x xs y ys xys :
+  Permutation xys (xs ++ (y :: ys)) -> sorted xys ->
+  x <= y -> sorted (x :: xs) -> sorted (y :: ys) -> sorted (x :: xys).
+Proof.
+  intros. apply sorted_cons_all; eauto; intros.
+  eapply Permutation_in in H4; eauto.
+  apply in_app_or in H4; destruct H4.
+  - eapply sorted_head in H2; eauto.
+  - revert x' H4. eapply sorted_head.
+    constructor; eauto.
+Qed.
+
+Lemma merge_refines_total_spec {E} `{errorE -< E} pr :
+  padded_refines_eq (E:=E) eq (merge pr) (total_spec merge_pre merge_post pr).
+Proof.
+  unfold merge, is_nil, head, tail.
+  prove_refinement.
+  - exact (a = a0).
+  - exact (merge_post a r).
+  - exact (dec_either_length a a0).
+  - apply wf_dec_either_length.
+  - unfold merge_pre, merge_post, dec_either_length.
+    prove_refinement_continue.
+    all: repeat split; simpl; auto.
+    all: destruct e_forall; try easy.
+    + eapply sorted_tail; eauto.
+    + eapply sorted_cons_perm_app; eauto.
+      apply leb_complete; eauto.
+    + eapply sorted_cons_perm_app; eauto.
+      apply leb_complete; eauto.
+    + eapply sorted_tail; eauto.
+    + rewrite Permutation_app_comm in H2.
+      eapply sorted_cons_perm_app; eauto.
+      apply leb_iff_conv in e_if; lia.
+    + rewrite H2. rewrite (Permutation_app_comm a2 (a :: a3)).
+      cbn. rewrite Permutation_app_comm. constructor.
+    + rewrite Permutation_app_comm in H2.
+      eapply sorted_cons_perm_app; eauto.
+      apply leb_iff_conv in e_if; lia.
+    + rewrite H2. rewrite (Permutation_app_comm a2 (a :: a3)).
+      cbn. rewrite Permutation_app_comm. constructor.
+    + rewrite app_nil_r. reflexivity.
+    + rewrite app_nil_r. reflexivity.
+Qed.
+
+
+(** * Sort *)
+
+Definition sort_pre (l : list nat) := True.
+Definition sort_post (l1 l2 : list nat) :=
+  sorted l2 /\
+  Permutation l1 l2.
+
+Lemma sort_refines_total_spec {E} `{errorE -< E} pr :
+  padded_refines_eq (E:=E) eq (sort pr) (total_spec sort_pre sort_post pr).
+Proof.
+  unfold sort, is_nil, head, tail.
+  prove_refinement.
+  - exact (a = a0).
+  - exact (sort_post a r).
+  - exact (dec_length a a0).
+  - apply well_founded_ltof.
+  - unfold sort_pre, sort_post, dec_length.
+    
+Admitted.
