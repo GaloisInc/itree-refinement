@@ -467,10 +467,10 @@ Ltac IntroArg_rewrite_bool_eq n :=
 Hint Extern 102 (IntroArg ?n (@eq bool _ _) _) =>
   progress (IntroArg_rewrite_bool_eq n) : refines prepostcond.
 
-Hint Extern 105 (IntroArg ?n (?x = ?y) _) =>
+Hint Extern 103 (IntroArg ?n (?x = ?y) _) =>
   let e := argName n in IntroArg_intro e;
     try first [ is_var x; subst x | is_var y; subst y ] : refines.
-Hint Extern 106 (IntroArg ?n _ _) =>
+Hint Extern 104 (IntroArg ?n _ _) =>
   let e := argName n in IntroArg_intro e : refines prepostcond.
 
 
@@ -551,7 +551,7 @@ Definition padded_refines_ret_IntroArg E1 E2 R1 R2 RE REAns RR r1 r2 :
   @padded_refines E1 E2 R1 R2 RE REAns RR (Ret r1) (Ret r2) :=
   padded_refines_ret E1 E2 R1 R2 RE REAns RR r1 r2.
 
-Hint Extern 103 (padded_refines _ _ _ (Ret _) (Ret _)) =>
+Hint Extern 102 (padded_refines _ _ _ (Ret _) (Ret _)) =>
   apply padded_refines_ret_IntroArg : refines.
 
 Definition padded_refines_vis_IntroArg E1 E2 R1 R2 A B
@@ -564,13 +564,13 @@ Definition padded_refines_vis_IntroArg E1 E2 R1 R2 A B
   padded_refines RE REAns RR (Vis (Spec_vis e1) k1) (Vis (Spec_vis e2) k2) :=
   padded_refines_vis E1 E2 R1 R2 A B RE REAns RR e1 e2 k1 k2.
 
-Hint Extern 103 (padded_refines _ _ _ (Vis (Spec_vis _) _) (Vis (Spec_vis _) _)) =>
+Hint Extern 102 (padded_refines _ _ _ (Vis (Spec_vis _) _) (Vis (Spec_vis _) _)) =>
   apply padded_refines_vis_IntroArg : refines.
-Hint Extern 103 (padded_refines _ _ _ (vis (Spec_vis _) _) (Vis (Spec_vis _) _)) =>
+Hint Extern 102 (padded_refines _ _ _ (vis (Spec_vis _) _) (Vis (Spec_vis _) _)) =>
   apply padded_refines_vis_IntroArg : refines.
-Hint Extern 103 (padded_refines _ _ _ (Vis (Spec_vis _) _) (vis (Spec_vis _) _)) =>
+Hint Extern 102 (padded_refines _ _ _ (Vis (Spec_vis _) _) (vis (Spec_vis _) _)) =>
   apply padded_refines_vis_IntroArg : refines.
-Hint Extern 103 (padded_refines _ _ _ (vis (Spec_vis _) _) (vis (Spec_vis _) _)) =>
+Hint Extern 102 (padded_refines _ _ _ (vis (Spec_vis _) _) (vis (Spec_vis _) _)) =>
   apply padded_refines_vis_IntroArg : refines.
 
 Definition padded_refines_exists_l_IntroArg E1 E2 R1 R2 A
@@ -584,22 +584,22 @@ Definition padded_refines_forall_r_IntroArg E1 E2 R1 R2 A
   padded_refines RE REAns RR phi (Vis Spec_forall kphi) :=
   padded_refines_forall_r E1 E2 R1 R2 A RE REAns RR phi kphi.
 
-Hint Extern 102 (padded_refines _ _ _ _ (Vis Spec_forall _)) =>
+Hint Extern 101 (padded_refines _ _ _ _ (Vis Spec_forall _)) =>
   simple apply padded_refines_forall_r_IntroArg : refines.
-Hint Extern 102 (padded_refines _ _ _ _ (vis Spec_forall _)) =>
+Hint Extern 101 (padded_refines _ _ _ _ (vis Spec_forall _)) =>
   apply padded_refines_forall_r_IntroArg : refines.
-Hint Extern 102 (padded_refines _ _ _ (Vis Spec_exists _) _) =>
+Hint Extern 101 (padded_refines _ _ _ (Vis Spec_exists _) _) =>
   simple apply padded_refines_exists_l_IntroArg : refines.
-Hint Extern 102 (padded_refines _ _ _ (vis Spec_exists _) _) =>
+Hint Extern 101 (padded_refines _ _ _ (vis Spec_exists _) _) =>
   apply padded_refines_exists_l_IntroArg : refines.
 
-Hint Extern 103 (padded_refines _ _ _ _ (Vis Spec_exists _)) =>
+Hint Extern 102 (padded_refines _ _ _ _ (Vis Spec_exists _)) =>
   unshelve (simple eapply padded_refines_exists_r); [shelve|] : refines.
-Hint Extern 103 (padded_refines _ _ _ _ (vis Spec_exists _)) =>
+Hint Extern 102 (padded_refines _ _ _ _ (vis Spec_exists _)) =>
   unshelve (eapply padded_refines_exists_r); [shelve|] : refines.
-Hint Extern 103 (padded_refines _ _ _ (Vis Spec_forall _) _) =>
+Hint Extern 102 (padded_refines _ _ _ (Vis Spec_forall _) _) =>
   unshelve (simple eapply padded_refines_forall_l); [shelve|] : refines.
-Hint Extern 103 (padded_refines _ _ _ (vis Spec_forall _) _) =>
+Hint Extern 102 (padded_refines _ _ _ (vis Spec_forall _) _) =>
   unshelve (eapply padded_refines_forall_l); [shelve|] : refines.
 
 Definition padded_refines_if_r_IntroArg E1 E2 RE REAns R1 R2 RR t1 t2 t3 b :
@@ -858,9 +858,9 @@ Hint Extern 992 (padded_refines _ _ _ _ (trepeat _ _)) =>
 Hint Extern 992 (padded_refines _ _ _ _ (trepeat _ _ >>= _)) =>
   simple apply padded_refines_trepeat_bind_zero_r : refines.
 
-Hint Extern 100 (padded_refines _ _ _ (total_spec _ _ _) _) =>
+Hint Extern 101 (padded_refines _ _ _ (total_spec _ _ _) _) =>
   unfold total_spec at 1 : refines.
-Hint Extern 100 (padded_refines _ _ _ (total_spec _ _ _ >>= _) _) =>
+Hint Extern 101 (padded_refines _ _ _ (total_spec _ _ _ >>= _) _) =>
   unfold total_spec at 1 : refines.
 
 

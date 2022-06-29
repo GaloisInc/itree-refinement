@@ -262,14 +262,14 @@ Lemma padded_refines_rew_bind_l {E1 E2 R1 R2 A RE REAns RR}
   padded_refines RE REAns RR (t1 >>= k) t3.
 Proof. intros. rewrite H; eauto. Qed.
 
-Hint Extern 100 (padded_refines _ _ _ (halve ?l) _) =>
+Hint Extern 101 (padded_refines _ _ _ (halve ?l) _) =>
   apply (padded_refines_rew_l (halve_refines_total_spec l)) : refines.
-Hint Extern 100 (padded_refines _ _ _ (halve ?l >>= _) _) =>
+Hint Extern 101 (padded_refines _ _ _ (halve ?l >>= _) _) =>
   apply (padded_refines_rew_bind_l (halve_refines_total_spec l)) : refines.
 
-Hint Extern 100 (padded_refines _ _ _ (merge ?pr) _) =>
+Hint Extern 101 (padded_refines _ _ _ (merge ?pr) _) =>
   apply (padded_refines_rew_l (merge_refines_total_spec pr)) : refines.
-Hint Extern 100 (padded_refines _ _ _ (merge ?pr >>= _) _) =>
+Hint Extern 101 (padded_refines _ _ _ (merge ?pr >>= _) _) =>
   apply (padded_refines_rew_bind_l (merge_refines_total_spec pr)) : refines.
 
 Lemma sort_refines_total_spec {E} `{errorE -< E} pr :
