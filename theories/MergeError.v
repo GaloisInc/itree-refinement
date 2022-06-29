@@ -3,7 +3,7 @@
 Require Import Coq.Lists.List Coq.Sorting.Permutation.
 
 From Coq Require Export Morphisms RelationClasses Setoid Program.Equality.
-From Coq Require Export Wellfounded Arith.Wf_nat Arith.Compare_dec.
+From Coq Require Export Wellfounded Arith.Wf_nat Arith.Compare_dec Arith.Lt.
 From ITree Require Export ITree ITreeFacts Eq.Rutt Props.Infinite Props.Finite.
 From Paco Require Import paco.
 From Coq Require Export Eqdep EqdepFacts.
@@ -89,14 +89,19 @@ Definition merge {E : Type -> Type} `{errorE -< E} : (list nat * list nat) -> it
 
 Definition sort {E : Type -> Type} `{errorE -< E} : list nat -> itree_spec E (list nat) :=
   rec_fix_spec (fun rec l =>
-                  b <- is_nil l;;
-                  if b : bool then
-                    Ret nil
+                  b1 <- is_nil l;;
+                  if b1 : bool then
+                    Ret l
                   else
-                    '(l1, l2) <- halve l;;
-                    l1s <- rec l1;;
-                    l2s <- rec l2;;
-                    merge (l1s, l2s)
+                    t <- tail l;;
+                    b2 <- is_nil t;;
+                    if b2 : bool then
+                      Ret l
+                    else
+                      '(l1, l2) <- halve l;;
+                      l1s <- rec l1;;
+                      l2s <- rec l2;;
+                      merge (l1s, l2s)
                ).
 
 
@@ -243,6 +248,30 @@ Definition sort_post (l1 l2 : list nat) :=
   sorted l2 /\
   Permutation l1 l2.
 
+Lemma padded_refines_rew_l {E1 E2 R1 R2 RE REAns RR}
+      {t1 t2 : itree_spec E1 R1} {t3 : itree_spec E2 R2} :
+  padded_refines_eq eq t1 t2 ->
+  padded_refines RE REAns RR t2 t3 ->
+  padded_refines RE REAns RR t1 t3.
+Proof. intros. rewrite H; eauto. Qed.
+
+Lemma padded_refines_rew_bind_l {E1 E2 R1 R2 A RE REAns RR}
+      {t1 t2 : itree_spec E1 A} {k : A -> itree_spec E1 R1} {t3 : itree_spec E2 R2} :
+  padded_refines_eq eq t1 t2 ->
+  padded_refines RE REAns RR (t2 >>= k) t3 ->
+  padded_refines RE REAns RR (t1 >>= k) t3.
+Proof. intros. rewrite H; eauto. Qed.
+
+Hint Extern 100 (padded_refines _ _ _ (halve ?l) _) =>
+  apply (padded_refines_rew_l (halve_refines_total_spec l)) : refines.
+Hint Extern 100 (padded_refines _ _ _ (halve ?l >>= _) _) =>
+  apply (padded_refines_rew_bind_l (halve_refines_total_spec l)) : refines.
+
+Hint Extern 100 (padded_refines _ _ _ (merge ?pr) _) =>
+  apply (padded_refines_rew_l (merge_refines_total_spec pr)) : refines.
+Hint Extern 100 (padded_refines _ _ _ (merge ?pr >>= _) _) =>
+  apply (padded_refines_rew_bind_l (merge_refines_total_spec pr)) : refines.
+
 Lemma sort_refines_total_spec {E} `{errorE -< E} pr :
   padded_refines_eq (E:=E) eq (sort pr) (total_spec sort_pre sort_post pr).
 Proof.
@@ -253,5 +282,14 @@ Proof.
   - exact (dec_length a a0).
   - apply well_founded_ltof.
   - unfold sort_pre, sort_post, dec_length.
-    
-Admitted.
+    prove_refinement_continue.
+    all: unfold halve_pre, halve_post, merge_pre, merge_post in *.
+    all: try destruct e_exists0 as [? []]; try destruct e_exists1.
+    all: split; try easy; try solve [ constructor ].
+    + destruct H2; eauto. simpl in H2. lia.
+    + destruct H5.
+      * eapply le_lt_trans; eauto.
+      * simpl in H5. lia.
+    + rewrite H6, H10, H2, H5. reflexivity.
+    + rewrite H6, H10, H2, H5. reflexivity.
+Qed.

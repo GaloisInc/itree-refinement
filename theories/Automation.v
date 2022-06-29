@@ -860,6 +860,8 @@ Hint Extern 992 (padded_refines _ _ _ _ (trepeat _ _ >>= _)) =>
 
 Hint Extern 100 (padded_refines _ _ _ (total_spec _ _ _) _) =>
   unfold total_spec at 1 : refines.
+Hint Extern 100 (padded_refines _ _ _ (total_spec _ _ _ >>= _) _) =>
+  unfold total_spec at 1 : refines.
 
 
 (** * Tactics *)
