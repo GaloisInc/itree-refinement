@@ -459,18 +459,14 @@ Ltac IntroArg_base_tac n A g :=
 
 Hint Extern 101 (IntroArg ?n ?A ?g) => IntroArg_base_tac n A g : refines prepostcond.
 
-Ltac IntroArg_rewrite_bool_eq n :=
-  let e := fresh in
-    IntroArg_intro e; progress (repeat rewrite e in *);
-    apply (IntroArg_fold n _ _ e); clear e.
-
 Hint Extern 102 (IntroArg ?n (@eq bool _ _) _) =>
-  progress (IntroArg_rewrite_bool_eq n) : refines prepostcond.
+  let e := argName n in IntroArg_intro e; rewrite e in * : refines prepostcond.
 
-Hint Extern 103 (IntroArg ?n (?x = ?y) _) =>
+Hint Extern 199 (IntroArg ?n (?x = ?y) _) =>
   let e := argName n in IntroArg_intro e;
     try first [ is_var x; subst x | is_var y; subst y ] : refines.
-Hint Extern 104 (IntroArg ?n _ _) =>
+
+Hint Extern 999 (IntroArg ?n _ _) =>
   let e := argName n in IntroArg_intro e : refines prepostcond.
 
 
@@ -528,7 +524,8 @@ Lemma RelGoal_padded_refines_rec_REAnsInv_i A1 A2 R1 R2
       (RR : R1 -> R2 -> Prop) (precond : A1 -> A2 -> Prop)
       (postcond : forall a1 a2, precond a1 a2 -> forall (r1 : R1) (r2 : R2), RR r1 r2 -> Prop)
       a1 a2 r1 r2 :
-  forall (p0 : precond a1 a2) (p1 : RelGoal (RR r1 r2)), RelGoal (postcond a1 a2 p0 r1 r2 p1) ->
+  forall (p0 : RelGoal (precond a1 a2)) (p1 : RelGoal (RR r1 r2)),
+  RelGoal (postcond a1 a2 p0 r1 r2 p1) ->
   RelGoal (padded_refines_rec_REAnsInv A1 A2 R1 R2 RR precond postcond R1 R2 (Call a1) (Call a2) r1 r2).
 Proof. econstructor; econstructor; eauto. Qed.
 
