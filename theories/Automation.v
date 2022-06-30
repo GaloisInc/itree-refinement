@@ -415,6 +415,15 @@ Polymorphic Lemma IntroArg_sum_relEAns_inr n E1 E2 F1 F2
   IntroArg n (@sum_relEAns E1 E2 F1 F2 REE REF A B (inr1 f1) (inr1 f2) a b) goal.
 Proof. intros ?H ?H; dependent destruction H0; apply H. Qed.
 
+Polymorphic Lemma IntroArg_eqEAns n E A e a1 a2 (goal : _ -> Prop) :
+  IntroArg n (a1 = a2) (fun p => goal (eq_rect _ _ (eqEAns_eq A e a1) _ p)) ->
+  IntroArg n (@eqEAns E A A e e a1 a2) goal.
+Proof.
+  intros ?H ?H; dependent destruction H0.
+  apply (fun H => H eq_refl) in H.
+  erewrite eq_rect_eq; eauto.
+Qed.
+
 Polymorphic Lemma IntroArg_padded_refines_rec_REInv_i n A1 A2 R1 R2
                   (precond : A1 -> A2 -> Prop) a1 a2 (goal : _ -> Prop) :
   IntroArg n (precond a1 a2) (fun p => goal (padded_refines_rec_REInv_i _ _ _ _ _ _ _ p)) ->
@@ -435,20 +444,43 @@ Ltac IntroArg_intro_dependent_destruction n :=
   let e := argName n in
     IntroArg_intro e; dependent destruction e.
 
-Check dep_prod_rel.
-
 Ltac IntroArg_base_tac n A g :=
   lazymatch A with
   | (fun _ => _) _ => simple apply IntroArg_eta
   | _ /\ _ => simple apply IntroArg_and
   | sum_relE _ _ _ _ (inl1 _) (inl1 _) => simple apply IntroArg_sum_relE_inl
+  | sum_relE _ _ _ _ (inl1 _) (ReSum_inl _ _ _ _ _ _ _) => apply IntroArg_sum_relE_inl
+  | sum_relE _ _ _ _ (ReSum_inl _ _ _ _ _ _ _) (inl1 _) => apply IntroArg_sum_relE_inl
+  | sum_relE _ _ _ _ (ReSum_inl _ _ _ _ _ _ _) (ReSum_inl _ _ _ _ _ _ _) => apply IntroArg_sum_relE_inl
   | sum_relE _ _ _ _ (inr1 _) (inr1 _) => simple apply IntroArg_sum_relE_inr
+  | sum_relE _ _ _ _ (inr1 _) (ReSum_inr _ _ _ _ _ _ _) => apply IntroArg_sum_relE_inr
+  | sum_relE _ _ _ _ (ReSum_inr _ _ _ _ _ _ _) (inr1 _) => apply IntroArg_sum_relE_inr
+  | sum_relE _ _ _ _ (ReSum_inr _ _ _ _ _ _ _) (ReSum_inr _ _ _ _ _ _ _) => apply IntroArg_sum_relE_inr
   | sum_relE _ _ _ _ (inl1 _) (inr1 _) => IntroArg_intro_dependent_destruction n
+  | sum_relE _ _ _ _ (inl1 _) (ReSum_inr _ _ _ _ _ _ _) => IntroArg_intro_dependent_destruction n
+  | sum_relE _ _ _ _ (ReSum_inl _ _ _ _ _ _ _) (inr1 _) => IntroArg_intro_dependent_destruction n
+  | sum_relE _ _ _ _ (ReSum_inl _ _ _ _ _ _ _) (ReSum_inr _ _ _ _ _ _ _) => IntroArg_intro_dependent_destruction n
   | sum_relE _ _ _ _ (inr1 _) (inl1 _) => IntroArg_intro_dependent_destruction n
+  | sum_relE _ _ _ _ (inr1 _) (ReSum_inl _ _ _ _ _ _ _) => IntroArg_intro_dependent_destruction n
+  | sum_relE _ _ _ _ (ReSum_inr _ _ _ _ _ _ _) (inl1 _) => IntroArg_intro_dependent_destruction n
+  | sum_relE _ _ _ _ (ReSum_inr _ _ _ _ _ _ _) (ReSum_inl _ _ _ _ _ _ _) => IntroArg_intro_dependent_destruction n
   | sum_relEAns _ _ _ _ (inl1 _) (inl1 _) _ _ => simple apply IntroArg_sum_relEAns_inl
+  | sum_relEAns _ _ _ _ (inl1 _) (ReSum_inl _ _ _ _ _ _ _) _ _ => apply IntroArg_sum_relEAns_inl
+  | sum_relEAns _ _ _ _ (ReSum_inl _ _ _ _ _ _ _) (inl1 _) _ _ => apply IntroArg_sum_relEAns_inl
+  | sum_relEAns _ _ _ _ (ReSum_inl _ _ _ _ _ _ _) (ReSum_inl _ _ _ _ _ _ _) _ _ => apply IntroArg_sum_relEAns_inl
   | sum_relEAns _ _ _ _ (inr1 _) (inr1 _) _ _ => simple apply IntroArg_sum_relEAns_inr
+  | sum_relEAns _ _ _ _ (inr1 _) (ReSum_inr _ _ _ _ _ _ _) _ _ => apply IntroArg_sum_relEAns_inr
+  | sum_relEAns _ _ _ _ (ReSum_inr _ _ _ _ _ _ _) (inr1 _) _ _ => apply IntroArg_sum_relEAns_inr
+  | sum_relEAns _ _ _ _ (ReSum_inr _ _ _ _ _ _ _) (ReSum_inr _ _ _ _ _ _ _) _ _ => apply IntroArg_sum_relEAns_inr
   | sum_relEAns _ _ _ _ (inl1 _) (inr1 _) _ _ => IntroArg_intro_dependent_destruction n
+  | sum_relEAns _ _ _ _ (inl1 _) (ReSum_inr _ _ _ _ _ _ _) _ _ => IntroArg_intro_dependent_destruction n
+  | sum_relEAns _ _ _ _ (ReSum_inl _ _ _ _ _ _ _) (inr1 _) _ _ => IntroArg_intro_dependent_destruction n
+  | sum_relEAns _ _ _ _ (ReSum_inl _ _ _ _ _ _ _) (ReSum_inr _ _ _ _ _ _ _) _ _ => IntroArg_intro_dependent_destruction n
   | sum_relEAns _ _ _ _ (inr1 _) (inl1 _) _ _ => IntroArg_intro_dependent_destruction n
+  | sum_relEAns _ _ _ _ (inr1 _) (ReSum_inl _ _ _ _ _ _ _) _ _ => IntroArg_intro_dependent_destruction n
+  | sum_relEAns _ _ _ _ (ReSum_inr _ _ _ _ _ _ _) (inl1 _) _ _ => IntroArg_intro_dependent_destruction n
+  | sum_relEAns _ _ _ _ (ReSum_inr _ _ _ _ _ _ _) (ReSum_inl _ _ _ _ _ _ _) _ _ => IntroArg_intro_dependent_destruction n
+  | eqEAns _ _ _ _ _ _ => apply IntroArg_eqEAns
   | padded_refines_rec_REInv _ _ _ _ _ _ _ (Call _) (Call _) => simple apply IntroArg_padded_refines_rec_REInv_i
   | padded_refines_rec_REAnsInv _ _ _ _ _ _ _ _ _ (Call _) (Call _) _ _ => simple apply IntroArg_padded_refines_rec_REAnsInv_i
   | true  = true  => IntroArg_intro_dependent_destruction n
@@ -492,8 +524,20 @@ Proof. constructor; eauto. Qed.
 
 Hint Extern 101 (RelGoal (sum_relE _ _ _ _ (inl1 _) (inl1 _))) =>
   simple apply RelGoal_sum_relE_inl : refines.
+Hint Extern 101 (RelGoal (sum_relE _ _ _ _ (inl1 _) (ReSum_inl _ _ _ _ _ _ _))) =>
+  apply RelGoal_sum_relE_inl : refines.
+Hint Extern 101 (RelGoal (sum_relE _ _ _ _ (ReSum_inl _ _ _ _ _ _ _) (inl1 _))) =>
+  apply RelGoal_sum_relE_inl : refines.
+Hint Extern 101 (RelGoal (sum_relE _ _ _ _ (ReSum_inl _ _ _ _ _ _ _) (ReSum_inl _ _ _ _ _ _ _))) =>
+  apply RelGoal_sum_relE_inl : refines.
 Hint Extern 101 (RelGoal (sum_relE _ _ _ _ (inr1 _) (inr1 _))) =>
   simple apply RelGoal_sum_relE_inr : refines.
+Hint Extern 101 (RelGoal (sum_relE _ _ _ _ (inr1 _) (ReSum_inr _ _ _ _ _ _ _))) =>
+  apply RelGoal_sum_relE_inr : refines.
+Hint Extern 101 (RelGoal (sum_relE _ _ _ _ (ReSum_inr _ _ _ _ _ _ _) (inr1 _))) =>
+  apply RelGoal_sum_relE_inr : refines.
+Hint Extern 101 (RelGoal (sum_relE _ _ _ _ (ReSum_inr _ _ _ _ _ _ _) (ReSum_inr _ _ _ _ _ _ _))) =>
+  apply RelGoal_sum_relE_inr : refines.
 
 Lemma RelGoal_sum_relEAns_inl E1 E2 F1 F2 (REE : relationEAns E1 E2) (REF : relationEAns F1 F2)
                               A B e1 e2 a b :
@@ -508,8 +552,20 @@ Proof. constructor; eauto. Qed.
 
 Hint Extern 101 (RelGoal (sum_relEAns _ _ _ _ (inl1 _) (inl1 _) _ _)) =>
   simple apply RelGoal_sum_relEAns_inl : refines.
+Hint Extern 101 (RelGoal (sum_relEAns _ _ _ _ (inl1 _) (ReSum_inl _ _ _ _ _ _ _) _ _)) =>
+  apply RelGoal_sum_relEAns_inl : refines.
+Hint Extern 101 (RelGoal (sum_relEAns _ _ _ _ (ReSum_inl _ _ _ _ _ _ _) (inl1 _) _ _)) =>
+  apply RelGoal_sum_relEAns_inl : refines.
+Hint Extern 101 (RelGoal (sum_relEAns _ _ _ _ (ReSum_inl _ _ _ _ _ _ _) (ReSum_inl _ _ _ _ _ _ _) _ _)) =>
+  apply RelGoal_sum_relEAns_inl : refines.
 Hint Extern 101 (RelGoal (sum_relEAns _ _ _ _ (inr1 _) (inr1 _) _ _)) =>
   simple apply RelGoal_sum_relEAns_inr : refines.
+Hint Extern 101 (RelGoal (sum_relEAns _ _ _ _ (inr1 _) (ReSum_inr _ _ _ _ _ _ _) _ _)) =>
+  apply RelGoal_sum_relEAns_inr : refines.
+Hint Extern 101 (RelGoal (sum_relEAns _ _ _ _ (ReSum_inr _ _ _ _ _ _ _) (inr1 _) _ _)) =>
+  apply RelGoal_sum_relEAns_inr : refines.
+Hint Extern 101 (RelGoal (sum_relEAns _ _ _ _ (ReSum_inr _ _ _ _ _ _ _) (ReSum_inr _ _ _ _ _ _ _) _ _)) =>
+  apply RelGoal_sum_relEAns_inr : refines.
 
 Lemma RelGoal_padded_refines_rec_REInv_i A1 A2 R1 R2
       (precond : A1 -> A2 -> Prop)  a1 a2 :
@@ -540,6 +596,13 @@ Proof. econstructor; eauto. Qed.
 Hint Extern 101 (RelGoal (dep_prod_rel _ _ _ _)) =>
   simple apply RelGoal_dep_prod_rel : refines.
 
+Lemma RelGoal_eqE_refl {E A e} :
+  RelGoal (@eqE E A A e e).
+Proof. constructor. Qed.
+
+Hint Extern 101 (RelGoal (eqE _ _ _ _)) =>
+  apply RelGoal_eqE_refl : refines.
+
 
 (** * Basic Refinement Hints *)
 
@@ -568,6 +631,8 @@ Hint Extern 102 (padded_refines _ _ _ (vis (Spec_vis _) _) (Vis (Spec_vis _) _))
 Hint Extern 102 (padded_refines _ _ _ (Vis (Spec_vis _) _) (vis (Spec_vis _) _)) =>
   apply padded_refines_vis_IntroArg : refines.
 Hint Extern 102 (padded_refines _ _ _ (vis (Spec_vis _) _) (vis (Spec_vis _) _)) =>
+  apply padded_refines_vis_IntroArg : refines.
+Hint Extern 103 (padded_refines _ _ _ (vis _ _) (vis _ _)) =>
   apply padded_refines_vis_IntroArg : refines.
 
 Definition padded_refines_exists_l_IntroArg E1 E2 R1 R2 A

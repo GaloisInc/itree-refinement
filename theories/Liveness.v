@@ -37,3 +37,19 @@ Definition server_spec {E} `{errorE -< E} `{serverE -< E} : unit -> itree_spec E
                   trigger (sendE ls);;
                   rec tt
                ).
+
+Hint Extern 101 (padded_refines _ _ _ (sort ?l) _) =>
+  apply (padded_refines_rew_l (sort_refines_total_spec l)) : refines.
+Hint Extern 101 (padded_refines _ _ _ (sort ?l >>= _) _) =>
+  apply (padded_refines_rew_bind_l (sort_refines_total_spec l)) : refines.
+
+Lemma server_refines_spec {E} `{errorE -< E} `{serverE -< E} u :
+  padded_refines_eq (E:=E) eq (server_impl u) (server_spec u).
+Proof.
+  unfold server_impl, server_spec.
+  prove_refinement.
+  - exact (a = a0).
+  - exact True.
+  - prove_refinement_continue.
+    all: unfold sort_pre, sort_post in *; easy.
+Qed.
