@@ -1,5 +1,5 @@
 From Coq Require Export Morphisms RelationClasses Setoid Program.Equality.
-From ITree Require Export ITree ITreeFacts Eq.Rutt Props.Divergence Props.Finite.
+From ITree Require Export ITree ITreeFacts Eq.Rutt Props.Infinite Props.Finite.
 From Paco Require Import paco.
 From Coq Require Export Eqdep EqdepFacts.
 Require Import Lia.
@@ -141,6 +141,12 @@ Proof.
   - constructor. right. pclearbot. eapply CIH; eauto.
   - constructor. right. pclearbot. eapply CIH; apply H0.
   - constructor; auto. right. pclearbot. eapply CIH; apply H0.
+Qed.
+
+Lemma conv_ref_ret E R (r : R) : 
+  @conv_ref E R (Ret r).
+Proof.
+  pstep. red. constructor.
 Qed.
 
 Variant conv_ref_mrecF {E D : Type -> Type} {R : Type} (P : forall A, D A -> Prop) 

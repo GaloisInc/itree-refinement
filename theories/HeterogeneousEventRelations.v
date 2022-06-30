@@ -2,6 +2,11 @@ From Coq Require Export Morphisms Setoid Program.Equality.
 From ITree Require Export ITree ITreeFacts HeterogeneousRelations.
 
 
+Definition dep_prod_rel {R1 R2} (RR1 : R1 -> R2 -> Prop)
+  (RR2 : forall r1 r2, RR1 r1 r2 -> Prop) : R1 -> R2 -> Prop :=
+  fun r1 r2 => { p : RR1 r1 r2 | RR2 r1 r2 p }.
+
+
 Definition relationEH (E1 E2 : Type -> Type) : Type := forall A B, E1 A -> E2 B -> Prop.
 
 (*this is stronger than we need *)

@@ -1,11 +1,11 @@
 Require Import Coq.Lists.List Coq.Sorting.Permutation.
 
 From Coq Require Export Morphisms RelationClasses Setoid Program.Equality.
-From ITree Require Export ITree ITreeFacts Eq.Rutt Props.Divergence Props.Finite.
+From ITree Require Export ITree ITreeFacts Eq.Rutt Props.Infinite Props.Finite.
 From Paco Require Import paco.
 From Coq Require Export Eqdep EqdepFacts Logic.Classical.
 Require Import Lia.
-Require Export Refinement Merge ConvergentRefinement.
+Require Export Refinement Merge ConvergentRefinement ConcreteRefinement.
 
 Import Monads.
 Import MonadNotation.
@@ -192,6 +192,12 @@ Proof.
   eauto.
 Qed.
 
+Lemma conv_ref_mrec_ret (E D : Type -> Type) (R : Type) (P : forall A : Type, D A -> Prop) r: 
+  @conv_ref_mrec E D R P (Ret r).
+Proof.
+  pstep. constructor.
+Qed.
+
 Lemma conv_ref_mrec_ex (E D : Type -> Type) (R A : Type) (P : forall A : Type, D A -> Prop) k : 
   (forall a, conv_ref_mrec P (k a)) ->
   @conv_ref_mrec E D R P (Vis (@Spec_exists _ A) k ).
@@ -211,12 +217,26 @@ Proof.
   - right. pstep. auto.
 Qed.
 
+Lemma conv_ref_spec_exists E R :
+  @conv_ref E R (spec_exists R).
+Proof.
+  pstep. red. cbn. constructor.
+  intros. left. pstep. constructor.
+Qed.
+
 Section SpecFix.
   Context {A B: Type} {E : Type -> Type}.
   Context (Pre : A -> Prop) (Post : A -> B -> Prop).
   Context (prog : A -> itree_spec E B).
 
-  Context (Hprog : forall a, (exists b, prog a ≈ Ret b) \/ prog a ≈ ITree.spin).
+  Context (Rdec : A -> A -> Prop).
+  Context (HRdec : well_founded Rdec).
+
+  Context (Hprog : forall a, isConcrete (prog a)).
+  Variant pre_call : forall C, callE A B C -> Prop :=
+    | pre_call_intro (a : A) : Pre a -> pre_call B (Call a).
+  Variant post_call : forall C, callE A B C -> C -> Prop :=
+    | post_call_intro a b : Post a b -> post_call B (Call a) b.
 
   Definition total_spec (a : A) : itree_spec E B :=
     assume_spec (Pre a);;
@@ -256,6 +276,98 @@ Section SpecFix.
                         ITree.spin
                  ).
 
+
+  Definition total_spec_fix : A -> itree_spec E B :=
+    rec_fix_spec (fun rec a => 
+                    assume_spec (Pre a);;
+                    (
+                      n <- spec_exists nat;;
+                      trepeat n (a' <- spec_exists A;; assert_spec (Pre a' /\ Rdec a' a);; rec a' )
+                    );;
+                    b <- spec_exists B;;
+                    assert_spec (Post a b);;
+                    Ret b
+                 ).
+
+  (* here would be a good place for proofs that partial_spec_fix' is greater than any of these 
+     from there I should be able to prove that total_spec_fix
+   *)
+
+  Lemma total_spec_fix_total a : padded_refines_eq eq (total_spec_fix a) (total_spec a).
+  Proof.
+    revert a.
+    apply well_founded_ind with (R := Rdec). auto.
+    intros a Hind. unfold total_spec_fix. simpl.
+    setoid_rewrite interp_mrec_spec_bind.
+    match goal with |- context [ interp_mrec_spec ?k _ ] => set k as body end.
+    unfold total_spec. assumesr. intros Ha. setoid_rewrite interp_mrec_spec_assume.
+    assumesl. auto. rewrite bind_bind.  setoid_rewrite interp_mrec_spec_bind.
+    setoid_rewrite interp_mrec_spec_exists. existssl. intros n.
+    induction n.
+    - simpl. rewrite bind_ret_l. setoid_rewrite interp_mrec_spec_bind.
+      setoid_rewrite interp_mrec_spec_exists. 
+      setoid_rewrite interp_mrec_spec_bind. setoid_rewrite interp_mrec_spec_assert.
+      setoid_rewrite interp_mrec_spec_ret. reflexivity.
+    - simpl. rewrite bind_bind. setoid_rewrite interp_mrec_spec_bind.
+      setoid_rewrite IHn. setoid_rewrite interp_mrec_spec_bind.
+      setoid_rewrite interp_mrec_spec_exists. rewrite bind_bind. existssl.
+      intros a'. setoid_rewrite interp_mrec_spec_bind.
+      setoid_rewrite interp_mrec_spec_assert. rewrite bind_bind. assertsl.
+      intros [Hprea' Hdec]. simpl.
+      assert (Htot : interp_mrec_spec body (call_spec a') ≈ total_spec_fix a' ).
+      { unfold total_spec_fix, rec_fix_spec, rec_spec, mrec_spec .
+        setoid_rewrite interp_mrec_spec_inl. rewrite tau_eutt. rewrite bind_ret_r.
+        reflexivity. }
+      rewrite Htot, Hind; auto. unfold total_spec.
+      setoid_rewrite bind_bind at 1. assumesl. auto.
+      setoid_rewrite bind_bind at 1. existssl. intros b.
+      setoid_rewrite bind_bind at 1. assertsl. intros. rewrite bind_ret_l. reflexivity.
+   Qed.
+
+
+    Lemma partial_spec_fix_conv_ref : 
+    forall a, Pre a -> conv_ref (partial_spec_fix' a).
+  Proof.
+    intros a Ha.  
+    eapply conv_ref_mrec_conv_ref with (Pre := pre_call).
+    constructor. auto.
+    intros. inv H. inj_existT. subst. 
+    clear a Ha.
+    rename a0 into a. rename H2 into Ha. clear H0. cbn.
+    apply conv_ref_mrec_bind. rewrite bind_trigger. apply conv_ref_mrec_forall.
+    auto. intros. apply conv_ref_mrec_ret.
+    intros []. rewrite bind_bind. apply conv_ref_mrec_bind.
+    apply conv_ref_mrec_ex. intros. apply conv_ref_mrec_ret.
+    intros n. induction n; cbn.
+    - rewrite bind_ret_l. apply conv_ref_mrec_ex. intros [ | ].
+      2 : apply conv_ref_mrec_spin. apply conv_ref_mrec_bind.
+      + apply conv_ref_mrec_ex. intros. apply conv_ref_mrec_ret.
+      + intros. rewrite bind_bind. setoid_rewrite bind_vis.
+        apply conv_ref_mrec_ex. intros. repeat rewrite bind_ret_l.
+        apply conv_ref_mrec_ret.
+    - rewrite bind_bind. apply conv_ref_mrec_bind; intros; auto.
+      apply conv_ref_mrec_bind.
+      + apply conv_ref_mrec_ex. intros. apply conv_ref_mrec_ret.
+      + intros. rewrite bind_bind. setoid_rewrite bind_vis.
+        apply conv_ref_mrec_ex.
+        intros. repeat rewrite bind_ret_l. pstep. red. cbn.
+        constructor. constructor. auto. left.
+        apply conv_ref_mrec_ret.
+  Qed.
+
+  Lemma prog_ret_spin : forall a, Pre a -> 
+                             padded_refines_eq eq (prog a) (partial_spec_fix' a) -> 
+                             (exists b, prog a ≈ Ret b) \/ (prog a ≈ ITree.spin).
+  Proof.
+    intros a Href Ha. apply no_ev_to_dec. 
+    eapply concrete_conv_ref_padded_to_no_ev; eauto.
+    apply partial_spec_fix_conv_ref. auto.
+  Qed.
+    (* need a padded_refines version *)
+    
+(*   Lemma partial_spec_fix_partial_spec' a :
+    (Pre a -> padded_refines_eq eq (prog a) (partial_spec_fix' a)) ->
+    padded_refines_eq eq (prog a) (partial_spec a). *)
 
 
   Lemma partial_spec_fix_partial_spec_assume_succeed':
@@ -418,36 +530,46 @@ Section SpecFix.
   Qed.
 
 
-  Lemma partial_spec_fix_partial_spec a :
-    (Pre a -> padded_refines_eq eq (prog a) (partial_spec_fix a)) ->
-    padded_refines_eq eq (prog a) (partial_spec a).
-  Proof.
-    intros Hfix.
-    destruct (Hprog a) as [ [b Hb] | Hspin].
-    - destruct (classic (Pre a) ) as [Ha | Ha]; auto.
-      + rewrite Hb. rewrite Hb in Hfix. 
-        apply partial_spec_fix_partial_spec_assume_succeed; auto.
-      + apply or_spec_r. left. assumesr. intros. contradiction.
-    - rewrite Hspin. apply or_spec_r. right. reflexivity.
-  Qed.
 
   Lemma partial_spec_fix_partial_spec' a :
     (Pre a -> padded_refines_eq eq (prog a) (partial_spec_fix' a)) ->
     padded_refines_eq eq (prog a) (partial_spec a).
   Proof.
-    intros Hfix.
-    destruct (Hprog a) as [ [b Hb] | Hspin].
-    - destruct (classic (Pre a) ) as [Ha | Ha]; auto.
-      + rewrite Hb. rewrite Hb in Hfix. 
+    intros Hfix. destruct (classic (Pre a) ).
+    - specialize (Hfix H). apply prog_ret_spin in H as Hdec; auto.
+      destruct Hdec as [ [b Hb] | Hspin ].
+      + rewrite Hb. rewrite Hb in Hfix.
         apply partial_spec_fix_partial_spec_assume_succeed'; auto.
-      + apply or_spec_r. left. assumesr. intros. contradiction.
-    - rewrite Hspin. apply or_spec_r. right. reflexivity.
+      + rewrite Hspin. apply or_spec_r. right. reflexivity.
+    - apply or_spec_r. left. assumesr. intro. contradiction.
   Qed.   
 
-  Variant pre_call : forall C, callE A B C -> Prop :=
-    | pre_call_intro (a : A) : Pre a -> pre_call B (Call a).
-  Variant post_call : forall C, callE A B C -> C -> Prop :=
-    | post_call_intro a b : Post a b -> post_call B (Call a) b.
+
+  Lemma partial_spec_fix_partial_spec a :
+    (Pre a -> padded_refines_eq eq (prog a) (partial_spec_fix a)) ->
+    padded_refines_eq eq (prog a) (partial_spec a).
+  Proof.
+    intros Hfix. apply partial_spec_fix_partial_spec'.
+    intros Ha. specialize (Hfix Ha). etransitivity; eauto.
+    eapply padded_refines_monot with (RE1 := eqE) (REAns1 := eqEAns)
+    (RR1 := eqEAns _ _ (Call a) (Call a) ); auto.
+    { intros. eqEAns_inv PR. auto. }
+    eapply padded_refines_mrec with (REInv := eqE).
+    2 : constructor.
+    intros. eqE_inv H. clear Ha Hfix a. destruct d2.
+    simpl. assumesr. intros Ha. assumesl. auto.
+    repeat rewrite bind_bind.
+    existssl. intros n. existssr n.
+    apply padded_refines_bind with (RR := eq).
+    + apply refl_refines. red. intros. destruct e; do 2 constructor. 
+      red. intros. inv H. inj_existT. subst. eqEAns_inv  H6. auto.
+      inj_existT. subst. eqEAns_inv H6. auto.
+      auto. apply pad_is_padded.
+    + intros [] [] _ .
+      apply or_spec_r. left. existssl. intros b.
+      existssr b. assertsl. intros. assertsr. auto. apply padded_refines_ret.
+      constructor.
+   Qed.
 
   (*
   (* TODO : restructure this section so something like this can work *)
@@ -547,11 +669,12 @@ Admitted.
 Theorem halve_correct'' E l : padded_refines_eq eq (@halve E l) (partial_spec (fun _ => True) 
                                                    (fun l '(l1,l2) => Permutation l (l1 ++ l2) /\ 
                                (length l1 >= length l2 /\ (length l > length l1 \/ length l <= 1)) ) l).
-Proof.
-  eapply  partial_spec_fix_partial_spec. intros. apply halve_ret_spin.
-  intros _.
-  apply halve_spec_fix_correct'.
-Qed.
+(* Proof. *)
+(*   eapply  partial_spec_fix_partial_spec. intros. apply halve_ret_spin. *)
+(*   intros _. *)
+(*   apply halve_spec_fix_correct'. *)
+(* Qed. *)
+Admitted.
 
 Lemma sub_eqE_eq_type E P A B (ea : E A) (eb : E B) : sub_eqE P A B ea eb -> A = B.
 Proof.
