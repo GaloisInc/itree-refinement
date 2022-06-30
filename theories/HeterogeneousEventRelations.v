@@ -76,6 +76,8 @@ Variant rcomposeEAns {E1 E2 E3 : Type -> Type}
       RE A B C e1 e2 e3 -> exists b, RE12 A B e1 e2 a b /\ RE23 B C e2 e3 b c) ->
     rcomposeEAns RE12 RE23 RE A C e1 e3 a c.
 
+
+
 (*this is stronger than I need*)
 (* I see 2 ways to do it, either it is reflexive wrt RE
    or *)

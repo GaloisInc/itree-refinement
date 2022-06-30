@@ -12,7 +12,7 @@ Require Export Refinement.
 Import Monads.
 Import MonadNotation.
 Local Open Scope monad_scope.
-
+Locate MonadNotation.
 Open Scope list_scope.
 
 Locate Permutation.
@@ -630,6 +630,11 @@ Proof.
     assertsr. auto. reflexivity.
 Qed.
 
+Variant Err : Type -> Type :=
+  | throw : Err void.
+(* write nth spec
+Definition 
+*)
 (*what about relating these specs to 
   rec_fix (fun rec () => 
           or_spec (rec ()) (exists x, ret x)
