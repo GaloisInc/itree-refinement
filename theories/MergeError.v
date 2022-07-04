@@ -4,7 +4,7 @@ Require Import Coq.Lists.List Coq.Sorting.Permutation.
 
 From Coq Require Export Morphisms RelationClasses Setoid Program.Equality.
 From Coq Require Export Wellfounded Arith.Wf_nat Arith.Compare_dec Arith.Lt.
-From ITree Require Export ITree ITreeFacts Eq.Rutt Props.Infinite Props.Finite.
+From ITree Require Export ITree ITreeFacts Eq.Rutt Props.Finite.
 From Paco Require Import paco.
 From Coq Require Export Eqdep EqdepFacts.
 Require Import Lia.

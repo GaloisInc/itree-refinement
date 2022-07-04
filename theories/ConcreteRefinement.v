@@ -1,7 +1,7 @@
 From Coq Require Export Morphisms RelationClasses Setoid Program.Equality.
 From ITree Require Export ITree ITreeFacts.
 From Paco Require Import paco.
-From Coq Require Export Eqdep EqdepFacts.
+From Coq Require Export Eqdep EqdepFacts ClassicalFacts.
 Require Import Lia.
 Require Export Refinement ConvergentRefinement.
 
@@ -87,7 +87,24 @@ Proof.
   - rewrite <- pad_eutt. auto.
 Qed.
 
+Theorem no_ev_no_ret_to_spin E R : forall (t : itree E R),
+    no_events t -> (forall r, ~ t ≈ Ret r) -> t ≈ ITree.spin.
+Proof.
+  ginit. gcofix CIH. intros t Htev Htret.
+  pinversion Htev; use_simpobs.
+  - exfalso. eapply Htret. rewrite H0. reflexivity.
+  - rewrite H. gstep. red. cbn. constructor.
+    gfinal. left. eapply CIH; auto.
+    setoid_rewrite H in Htret. setoid_rewrite tau_eutt in Htret.
+    auto.
+Qed.
 (*relies on lem*)
 Theorem no_ev_to_dec E R : forall (t : itree E R), no_events t -> 
                                               (exists r, t ≈ Ret r) \/ t ≈ ITree.spin.
-Admitted.
+Proof.
+  intros. 
+  destruct (Axioms.classic (exists r, t ≈ Ret r) ); eauto.
+  right.
+  apply no_ev_no_ret_to_spin; auto.
+  intros r Hr. apply H0. exists r. auto.
+Qed.

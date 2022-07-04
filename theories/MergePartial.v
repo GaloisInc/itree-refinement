@@ -1,7 +1,7 @@
 Require Import Coq.Lists.List Coq.Sorting.Permutation.
 
 From Coq Require Export Morphisms RelationClasses Setoid Program.Equality.
-From ITree Require Export ITree ITreeFacts Eq.Rutt Props.Infinite Props.Finite.
+From ITree Require Export ITree ITreeFacts Eq.Rutt Props.Finite.
 From Paco Require Import paco.
 From Coq Require Export Eqdep EqdepFacts Logic.Classical.
 Require Import Lia.
@@ -571,30 +571,6 @@ Section SpecFix.
       constructor.
    Qed.
 
-  (*
-  (* TODO : restructure this section so something like this can work *)
-  Lemma partial_spec_fix_partial_spec_inv a :
-    padded_refines (sub_eqE pre_call) (sub_eqEAns post_call) (sub_eq (Post a) ) 
-                   (prog a) (partial_spec_fix a).
-  *)
-  (* should work as long as Pre is inhabitted that allows *)
-  Lemma partial_spec_fix_spin a :
-    padded_refines_eq eq ITree.spin (partial_spec_fix a).
-  Proof.
-    unfold partial_spec_fix. setoid_rewrite interp_mrec_spec_bind.
-    setoid_rewrite interp_mrec_spec_assume. assumesr.
-    intros Ha. cbn. rewrite <-  bind_bind.
-    match goal with | |- padded_refines _ _ _ _ (interp_mrec_spec _ ( ITree.bind ?t1 ?t2) ) =>
-                        remember t2 as t end.
-    clear Heqt. generalize dependent t.
-    (* this seems like a good coind hyp*)
-    (* better solution might be to create a divergent refinement,
-       showing that there is a path that you can keep getting taus in 
-       then give that some kind of mrec rule
-     *)
-    pcofix CIH.
-  Admitted.
-
   Lemma partial_spec_fix_spin' a :
     padded_refines_eq eq ITree.spin (partial_spec_fix' a).
   Proof.
@@ -660,21 +636,7 @@ Proof.
       rewrite H0. rewrite Permutation_app_comm. reflexivity. }
     { cbn. repeat rewrite H0. repeat rewrite app_length. lia. }
  Qed.
-(* this requires lem *)
-Lemma halve_ret_spin E l : (exists l', @halve E l ≈ Ret l') \/ (@halve E l ≈ ITree.spin).
-Admitted.
 
-
-(* ok so there is a bunch of small things I still need to do but I think I have solved the problem *)
-Theorem halve_correct'' E l : padded_refines_eq eq (@halve E l) (partial_spec (fun _ => True) 
-                                                   (fun l '(l1,l2) => Permutation l (l1 ++ l2) /\ 
-                               (length l1 >= length l2 /\ (length l > length l1 \/ length l <= 1)) ) l).
-(* Proof. *)
-(*   eapply  partial_spec_fix_partial_spec. intros. apply halve_ret_spin. *)
-(*   intros _. *)
-(*   apply halve_spec_fix_correct'. *)
-(* Qed. *)
-Admitted.
 
 Lemma sub_eqE_eq_type E P A B (ea : E A) (eb : E B) : sub_eqE P A B ea eb -> A = B.
 Proof.
@@ -700,103 +662,6 @@ Qed.
 Ltac sub_eqE_inv H := eapply sub_eqE_eq_type in H as ?H; subst; eapply sub_eqE_eq in H as [?H ?H] ; subst.
 Ltac sub_eqEAns_inv H := apply sub_eqEAns_eq_type in H as ?H; subst; apply sub_eqEAns_eq in H as [?H [?H ?H] ]; subst.
 
-Section merge_correct.
-  Definition merge_pre '(l1,l2) := sorted l1 /\ sorted l2.
-  Definition merge_post '(l1,l2) l := sorted l /\ Permutation l (l1 ++ l2).
-
-  Theorem merge_correct'' E l1 l2 : padded_refines_eq eq (@Merge.merge E (l1,l2)) 
-                                                  (partial_spec merge_pre merge_post (l1,l2)).
-  Proof.
-    eapply partial_spec_fix_partial_spec. admit. (* proof that merge has no event *)
-    (* I should be able to assume here that Pre holds, because if it does not,
-       then I can easily *)
-    intros Hl12.
-    eapply padded_refines_monot with (RE1 := eqE ) 
-                                   (REAns1 := eqEAns) 
-                                   (RR1 := sub_eqEAns (post_call (merge_post) ) _ _ 
-                                                      (Call (l1,l2)) (Call (l1,l2)) ); eauto.
-    { intros. inv PR. inj_existT. subst. auto. }
-    eapply padded_refines_mrec with (REInv := sub_eqE (pre_call merge_pre) )
-                                    (REAnsInv := sub_eqEAns (post_call (merge_post) ) ).
-    2 : { do 2 constructor. auto. } 
-    intros. sub_eqE_inv H.
-    clear Hl12 l1 l2. destruct d2 as [ [ l1 l2] ]. inv H0. destruct H1 as [Hl1 Hl2].
-    cbn.
-    destruct l1; destruct l2.
-    - assumesr. intros _. repeat rewrite bind_bind. existssr (0). setoid_rewrite bind_ret_l.
-      existssr (@nil nat). assertsr. split; auto. apply padded_refines_ret.
-      repeat constructor.
-    - assumesr. intros _. repeat rewrite bind_bind. existssr 0. setoid_rewrite bind_ret_l.
-      existssr (n :: l2). assertsr. auto.  apply padded_refines_ret.
-      do 2 constructor. split; auto.
-    - assumesr. intros _. repeat rewrite bind_bind. existssr 0. setoid_rewrite bind_ret_l.
-      existssr (n :: l1). assertsr. split; auto. rewrite app_nil_r. auto. apply padded_refines_ret.
-      do 2 constructor. split. auto. rewrite app_nil_r. auto.
-    - rename n0 into m. destruct (Nat.leb n m) eqn : Hnm.
-      + cbn. assumesr. intros _. repeat rewrite bind_bind. existssr 1.
-        cbn. repeat rewrite bind_bind. existssr (l1, m :: l2). setoid_rewrite bind_bind. assertsr.
-        split; auto. eapply sorted_tail. eauto. apply padded_refines_bind with (RR := sub_eq (merge_post (l1, m :: l2) ) ).
-        { apply padded_refines_vis. do 3 constructor. split; auto. eapply sorted_tail. eauto.
-          intros. inv H. inj_existT. subst. sub_eqEAns_inv  H6.
-          inv H2. inj_existT. subst. apply padded_refines_ret. constructor. auto.
-        }
-        intros ? lm Hlm. inv Hlm. setoid_rewrite bind_ret_l. existssr (n :: lm).
-        assertsr.
-        { destruct H. split.
-          - admit. (*fact about sorted list *)
-          - rewrite H0. reflexivity. 
-        }
-        apply padded_refines_ret. destruct H. do 3 constructor.
-        * admit.
-        * setoid_rewrite H0. reflexivity.
-      + cbn. assumesr. intros _. repeat rewrite bind_bind. existssr 1.
-        cbn. repeat rewrite bind_bind. existssr (n :: l1, l2). setoid_rewrite bind_bind. assertsr.
-        split; auto. eapply sorted_tail. eauto. apply padded_refines_bind with (RR := sub_eq (merge_post (n :: l1,  l2) ) ).
-        { apply padded_refines_vis. do 3 constructor. split; auto. eapply sorted_tail. eauto.
-          intros. inv H. inj_existT. subst. sub_eqEAns_inv  H6.
-          inv H2. inj_existT. subst. apply padded_refines_ret. constructor. auto.
-        }
-        intros ? lm Hlm. inv Hlm. setoid_rewrite bind_ret_l. existssr (m :: lm).
-        assertsr.
-        { destruct H. split.
-          - admit. (*fact about sorted list *)
-          - rewrite H0. cbn. rewrite (Permutation_app_comm (l1) (m :: l2) ) .  cbn. rewrite Permutation_app_comm.
-            constructor.
-        }
-        apply padded_refines_ret. destruct H. do 3 constructor.
-        * admit.
-        * rewrite H0. cbn. rewrite (Permutation_app_comm (l1) (m :: l2) ) .  cbn. rewrite Permutation_app_comm.
-          constructor.
- Admitted.
-
-End merge_correct.
-
-(* this should be contravariant, you can weaken the first and strengthen the second *)
-
-
-(*
-Instance test_le2 n : Proper (le ==> flip impl) (fun m => le m n).
-Proof.
-  repeat intro. subst. lia.
-Qed.
-                           
-Instance test_le1 : Proper (le ==> (flip le) ==> flip impl) le.
-Proof.
-  repeat intro. red in H0. lia.
-Qed.
-
-Instance test_le1' : Proper (le ==> (flip le) ==> impl) (flip le).
-Proof.
-  repeat intro. red in H0. red. red in H1. lia.
-Qed. *)
-(*
-Instance le_trans : Transitive le.
-Proof.
-  repeat intro. lia.
-Qed.
-
-Goal 1 <= 2 -> 2 <= 3 -> 1 <= 3.
-*)
 
 Global Instance padded_refines_sub_eq E R (RR : R -> R -> Prop) (P1 : forall A, E A -> Prop) (P2 : forall A, E A -> A -> Prop) :
   Transitive RR ->
@@ -858,85 +723,6 @@ Proof.
   pstep. constructor. intros [ | ]; constructor; pstep_reverse.
 Qed.
 
-Section sort_correct.
-  Definition sort_pre (l : list nat) := True.
-  Definition sort_post (l l' : list nat) := Permutation l l' /\ sorted l'.
-
-  Theorem sort_correct' E l : padded_refines_eq eq (@sort E l) (partial_spec sort_pre sort_post l).
-  Proof.
-    eapply partial_spec_fix_partial_spec'. admit.
-    intros _.
-    eapply padded_refines_monot with (RE1 := eqE ) 
-                                   (REAns1 := eqEAns) 
-                                   (RR1 := sub_eqEAns (post_call (sort_post) ) _ _ 
-                                                      (Call (l)) (Call (l)) ); eauto.
-    { intros. sub_eqEAns_inv  PR. auto. }
-    eapply padded_refines_mrec with (REInv := sub_eqE (pre_call sort_pre) )
-                                    (REAnsInv := sub_eqEAns (post_call (sort_post) ) ).
-    2 : { repeat constructor. }
-    intros. clear l. sub_eqE_inv  H. destruct d2. inv H0.
-    cbn. destruct (Nat.leb (length l) 1 ) eqn : Hlen.
-    - assumesr. intros _. repeat rewrite bind_bind. existssr 0.
-      cbn. rewrite bind_ret_l. apply or_spec_r. left.
-      existssr l. 
-      assert (sort_post l l).
-      { destruct l. split; auto. constructor. destruct l. split; auto.
-        constructor. discriminate. }
-      assertsr. auto. apply padded_refines_ret. 
-      do 2 constructor. auto.
-    - rewrite halve_correct''. 
-      (* here I really want to push the or_spec left, probably only works if only quantifiers,
-         if I can get past this then it should work *)
-
-      unfold partial_spec, total_spec. rewrite or_spec_bind.
-      apply or_spec_l.
-      2 : { setoid_rewrite spin_bind. 
-            assumesr. intros _ . repeat rewrite bind_bind. existssr 0.
-            cbn. rewrite bind_ret_l. apply or_spec_r. right.
-            apply padded_refines_spin.
-          }
-      setoid_rewrite bind_bind at 1. assumesl. auto.  setoid_rewrite bind_bind at 1.
-      existssl. intros [l1 l2]. setoid_rewrite bind_bind at 1. assertsl.
-      intros Hl12. rewrite bind_ret_l.
-      (* now I really need to push the or_spec further because in order to get to the 
-         merge call (which itself might diverge , unless I actually  I need to just add more off ramps with o) *)
-
-      setoid_rewrite bind_bind. assumesr. intros _ .
-      existssr 2. cbn. repeat rewrite bind_bind.
-      existssr l1. rewrite bind_bind. assertsr.
-      auto. apply padded_refines_bind with (RR := sub_eq (sort_post l1) ).
-      { apply padded_refines_vis. repeat constructor.
-        intros. inv H. inj_existT. subst. sub_eqEAns_inv H7.
-        subst. apply padded_refines_ret. constructor. inv H3. inj_existT.
-        subst. auto.
-      }
-      intros ? l1s Hl1s. inv Hl1s.
-      repeat rewrite bind_bind.
-      existssr l2. repeat rewrite bind_bind. assertsr.
-      auto. apply padded_refines_bind with (RR := sub_eq (sort_post l2) ).
-      {
-        apply padded_refines_vis. repeat constructor. intros.
-        inv H0. inj_existT. subst. sub_eqEAns_inv H8.
-        subst. apply padded_refines_ret. constructor. inv H3. inj_existT.
-        subst. auto. }
-      intros ? l2s Hl2s. inv Hl2s. rewrite bind_ret_l.
-      rewrite merge_correct''. unfold partial_spec.
-      apply or_spec_l.
-      2 : { apply or_spec_r. right. apply padded_refines_spin. } (*same lemma as before*)
-      apply or_spec_r. left. unfold total_spec. cbn. red in H. red in H0.
-      assumesl. tauto.
-      existssl. intros ls. assertsl. intros Hls. destruct H. destruct H0. 
-      destruct Hls. existssr ls. assertsr.
-      split; auto.
-      destruct Hl12. rewrite H6, H, H0, H5. reflexivity.
-      apply padded_refines_ret.
-      constructor. split; auto.
-      destruct Hl12. 
-      split; auto.
-      rewrite H6, H, H0, H5. reflexivity.
-Admitted.
-
-End sort_correct.
 
 (*
 Theorem merge
