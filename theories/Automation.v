@@ -4,7 +4,7 @@ From Coq Require Import ZArith.
 From ITree Require Export ITree.
 From Paco Require Import paco.
 Require Import Lia.
-Require Export Refinement Merge MergePartial.
+Require Export Refinement Combinators.
 
 Import Monads.
 Import MonadNotation.
@@ -27,7 +27,9 @@ Lemma padded_refines_vis E1 E2 R1 R2 A B
   (forall a b, (RPost A B e1 e2 a b : Prop) -> padded_refines RPre RPost RR (k1 a) (k2 b)) ->
   padded_refines RPre RPost RR (Vis (Spec_vis e1) k1) (Vis (Spec_vis e2) k2).
 Proof.
-  apply padded_refines_vis.
+  unfold padded_refines. setoid_rewrite pad_vis. intros.
+  pstep. constructor; auto. intros. left. pstep. constructor.
+  left. eapply H0; auto.
 Qed.
 
 Lemma padded_refines_exists_r E1 E2 R1 R2 A
@@ -286,6 +288,10 @@ Definition total_spec_fix_body (a : A2) : itree_spec (callE A2 R2 +' E2) R2 :=
   b <- exists_spec R2;;
   assert_spec (Post a b);;
   Ret b.
+
+From Coq Require Export Morphisms RelationClasses Setoid Program.Equality.
+From Coq Require Export Eqdep EqdepFacts Logic.Classical.
+
 
 Lemma padded_refines_total_spec (a1 : A1) (a2 : A2) :
   well_founded rdec ->
@@ -970,35 +976,4 @@ Lemma test_exists E (x : Z) :
                   (r <- exists_spec Z ;; Ret r).
 Proof.
   prove_refinement.
-Qed.
-
-Lemma test_halve_refl E xs :
-  padded_refines_eq eq (@halve E xs) (@halve E xs).
-Proof.
-  unfold padded_refines_eq, halve.
-  prove_refinement.
-  - exact (a = a0).
-  - exact True.
-  - prove_refinement_continue.
-Qed.
-
-Open Scope nat_scope.
-
-Lemma halve_refines_spec E l :
-  padded_refines_eq eq (@halve E l) (@halve_spec_fix E l).
-Proof.
-  unfold halve, halve_spec_fix, halve_spec.
-  prove_refinement.
-  - exact (a = a0).
-  - exact ((Permutation a (fst r ++ snd r)) /\
-           (length (fst r) >= length (snd r) /\ (length a > length (fst r) \/ length a <= 1))).
-  - prove_refinement_continue.
-    all: cbn; cbn in *.
-    all: try split; try easy; try lia.
-    + rewrite Permutation_app_comm. cbn.
-      rewrite H0. rewrite Permutation_app_comm. reflexivity.
-    + rewrite H0. repeat rewrite app_length. lia.
-    + rewrite Permutation_app_comm. cbn.
-      rewrite H0. rewrite Permutation_app_comm. reflexivity.
-    + repeat rewrite H0. repeat rewrite app_length. lia.
 Qed.

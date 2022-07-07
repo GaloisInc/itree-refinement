@@ -242,6 +242,19 @@ Proof.
   - inv Ht2. pclearbot. punfold H0.
 Qed.
 
+Lemma conv_ref_mrec_spin (E D : Type -> Type) (R : Type) (P : forall A : Type, D A -> Prop) :
+  @conv_ref_mrec E D R P ITree.spin.
+Proof.
+  pcofix CIH. pstep. red. cbn. constructor.
+  eauto.
+Qed.
+
+Lemma conv_ref_mrec_ret (E D : Type -> Type) (R : Type) (P : forall A : Type, D A -> Prop) r:
+  @conv_ref_mrec E D R P (Ret r).
+Proof.
+  pstep. constructor.
+Qed.
+
 Lemma conv_ref_mrec_forall E D R P A k :
   A ->
   (forall a : A, @conv_ref_mrec E D R P (k a)) ->

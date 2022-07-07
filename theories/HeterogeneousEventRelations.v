@@ -1,5 +1,9 @@
 From Coq Require Export Morphisms Setoid Program.Equality.
 From ITree Require Export ITree ITreeFacts HeterogeneousRelations.
+From Coq Require Export Eqdep EqdepFacts.
+
+
+Ltac inj_existT := repeat match goal with | H : existT _ _ _ = _ |- _ => apply inj_pair2 in H end.
 
 
 Notation Rel A B := (A -> B -> Prop).
@@ -99,3 +103,58 @@ Variant subEqPostRel {E} (P : forall A, E A -> A -> Prop) : PostRel E E :=
 
 Variant subEqRel {A: Type} (P : A -> Prop) : Rel A A :=
   | subEqRel_intro a : P a -> subEqRel P a a.
+
+
+Lemma eqPreRel_eq_type E A B (ea : E A) (eb : E B) : eqPreRel A B ea eb -> A = B.
+Proof.
+  intros. inv H. auto.
+Qed.
+
+Lemma eqPreRel_eq E A (e1 : E A) (e2 : E A) : eqPreRel A A e1 e2 -> e1 = e2.
+Proof.
+  intros. inv H. inj_existT. subst. auto.
+Qed.
+
+Lemma eqPostRel_eq_type E A B (ea : E A) (eb : E B) a b : eqPostRel A B ea eb a b -> A = B.
+Proof.
+  intros. inv H. auto.
+Qed.
+
+Lemma eqPostRel_eq E A (e1 : E A) (e2 : E A) a1 a2 : eqPostRel A A e1 e2 a1 a2 -> e1 = e2 /\ a1 = a2.
+Proof.
+  intros. inv H. inj_existT. subst. auto.
+Qed.
+
+Ltac eqPreRel_inv H := apply eqPreRel_eq_type in H as ?H; subst; apply eqPreRel_eq in H; subst.
+Ltac eqPostRel_inv H := apply eqPostRel_eq_type in H as ?H; subst; apply eqPostRel_eq in H as [?H ?H]; subst.
+
+
+Lemma subEqPreRel_eq_type E P A B (ea : E A) (eb : E B) : subEqPreRel P A B ea eb -> A = B.
+Proof.
+  intros. inv H. auto.
+Qed.
+
+Lemma subEqPreRel_eq E P A (e1 : E A) (e2 : E A) : subEqPreRel P A A e1 e2 -> e1 = e2 /\ P A e1.
+Proof.
+  intros. inv H. inj_existT. subst. auto.
+Qed.
+
+Lemma subEqPostRel_eq_type E P A B (ea : E A) (eb : E B) a b : subEqPostRel P A B ea eb a b -> A = B.
+Proof.
+  intros. inv H. auto.
+Qed.
+
+Lemma subEqPostRel_eq E P A (e1 : E A) (e2 : E A) a1 a2 : subEqPostRel P A A e1 e2 a1 a2 -> e1 = e2 /\ a1 = a2
+                                                                                 /\ P A e1 a1.
+Proof.
+  intros. inv H. inj_existT. subst. auto.
+Qed.
+
+Ltac subEqPreRel_inv H := eapply subEqPreRel_eq_type in H as ?H; subst; eapply subEqPreRel_eq in H as [?H ?H] ; subst.
+Ltac subEqPostRel_inv H := apply subEqPostRel_eq_type in H as ?H; subst; apply subEqPostRel_eq in H as [?H [?H ?H] ]; subst.
+
+
+Global Instance subEqPostRel_trans E (P : forall A, E A -> A -> Prop) A (e : E A) : Transitive (subEqPostRel P A A e e).
+Proof.
+  intros x y z Hxy Hyz. subEqPostRel_inv Hxy. auto.
+Qed.

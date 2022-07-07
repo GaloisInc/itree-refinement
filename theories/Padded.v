@@ -6,8 +6,6 @@ From Coq Require Export Eqdep EqdepFacts.
 Require Export HeterogeneousEventRelations.
 
 
-Ltac inj_existT := repeat match goal with | H : existT _ _ _ = _ |- _ => apply inj_pair2 in H end.
-
 Variant paddedF {E R} (F : itree E R -> Prop) : itree' E R -> Prop :=
   | paddedF_Ret r : paddedF F (RetF r)
   | paddedF_Tau t : F t -> paddedF F (TauF t)

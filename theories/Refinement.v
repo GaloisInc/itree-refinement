@@ -88,8 +88,6 @@ Qed.
 Definition satisfies {E R1 R2} RR : itree E R1 -> itree_spec E R2 -> Prop :=
   paco2 (satisfies_ RR) bot2.
 
-Ltac inj_existT := repeat match goal with | H : existT _ _ _ = _ |- _ => apply inj_pair2 in H end.
-
 Section satisfies_test.
 
   CoFixpoint cphi1 {E} (A R : Type) : itree_spec E R := Vis (Spec_forall) (fun _ : A => cphi1 A R).
@@ -1943,4 +1941,25 @@ Lemma padded_refines_spin E1 E2 R1 R2 RPre RPost RR :
 Proof.
   pcofix CIH.
   pstep. red. cbn. constructor. eauto.
+Qed.
+
+Global Instance padded_refines_subEqRel E R (RR : R -> R -> Prop) (P1 : forall A, E A -> Prop) (P2 : forall A, E A -> A -> Prop) :
+  Transitive RR ->
+  Transitive (padded_refines (subEqPreRel P1) (subEqPostRel P2) RR).
+Proof.
+  intros HRR t1 t2 t3 Ht12 Ht23. unfold padded_refines in *.
+  eapply refines_monot; try eapply refinesTrans; eauto with solve_padded; try apply pad_is_padded.
+  - intros A B ea eb PR. inv PR. inj_existT. subst. subEqPreRel_inv H3. auto.
+  - intros. subEqPostRel_inv  PR. constructor. intros. destruct H. subEqPreRel_inv H.
+    exists x1. split; constructor; auto.
+  - intros. inv PR. etransitivity; eauto.
+Qed.
+
+Global Instance padded_refines_eq_itree E1 E2 R1 R2 RPre RPost RR
+  : Proper (eq_itree eq ==> eq_itree eq ==> impl)
+           (@padded_refines E1 E2 R1 R2 RPre RPost RR).
+Proof.
+  repeat intro. assert (x ≈ y). rewrite H. reflexivity.
+  rewrite <- H2. assert (x0 ≈ y0). rewrite H0. reflexivity.
+  rewrite <- H3. auto.
 Qed.
