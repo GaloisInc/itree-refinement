@@ -176,7 +176,7 @@ Section Refines.
  ***)
 
 Context {E1 E2 : Type -> Type} {R1 R2 : Type}.
-Context (RE : relationEH E1 E2) (REAns : relationEAns E1 E2) (RR : R1 -> R2 -> Prop).
+Context (RE : PreRel E1 E2) (REAns : PostRel E1 E2) (RR : R1 -> R2 -> Prop).
 
 (* One itree_spec refines another iff, after turning finitely many quantifier
 events to actual quantifiers, they have the same constructor with continuations
@@ -268,7 +268,7 @@ End Refines.
 
 (* Reflexivity of refinement *)
 Lemma refl_refines {E R} RE REAns RR :
-  ReflexiveE RE -> ReflexiveEAns REAns -> Reflexive RR ->
+  ReflexivePreRel RE -> ReflexivePostRel REAns -> Reflexive RR ->
   forall t, padded t -> (@refines E E R R RE REAns RR t t).
 Proof.
   intros HRE HREAns HRR. pcofix CIH.
@@ -535,7 +535,7 @@ Qed.
 
 Lemma refines_Vis_existsR:
   forall (E1 : Type -> Type) (R1 : Type) (E2 : Type -> Type) (R2 : Type)
-    (RE1 : relationEH E1 E2) (REAns1 : relationEAns E1 E2) (RR1 : R1 -> R2 -> Prop)
+    (RE1 : PreRel E1 E2) (REAns1 : PostRel E1 E2) (RR1 : R1 -> R2 -> Prop)
     (A : Type) (kphi : A -> itree_spec E2 R2) (phi1 : itree_spec E1 R1),
     refines RE1 REAns1 RR1 phi1
              (Vis Spec_exists kphi) ->
@@ -633,8 +633,8 @@ Print Assumptions paddedF_TauF_hint. (* closed *)
 
 Lemma refines_eutt_padded_l_tau_aux:
   forall (E2 : Type -> Type) (R2 : Type) (E1 : Type -> Type)
-    (R1 : Type) (RE : relationEH E1 E2)
-    (REAns : relationEAns E1 E2) (RR : R1 -> R2 -> Prop)
+    (R1 : Type) (RE : PreRel E1 E2)
+    (REAns : PostRel E1 E2) (RR : R1 -> R2 -> Prop)
     (r : itree_spec E1 R1 -> itree_spec E2 R2 -> Prop)
     (m1 m2 : itree_spec E1 R1) (t3 : itree_spec E2 R2),
     (forall (t1 t2 : itree_spec E1 R1) (t4 : itree_spec E2 R2),
@@ -801,8 +801,8 @@ Print Assumptions refines_eutt_padded_l_tau_aux.
 
 Lemma refines_eutt_padded_r_tau_aux:
   forall (E2 : Type -> Type) (R2 : Type) (E1 : Type -> Type)
-    (R1 : Type) (RE : relationEH E1 E2)
-    (REAns : relationEAns E1 E2) (RR : R1 -> R2 -> Prop)
+    (R1 : Type) (RE : PreRel E1 E2)
+    (REAns : PostRel E1 E2) (RR : R1 -> R2 -> Prop)
     (r : itree_spec E1 R1 -> itree_spec E2 R2 -> Prop)
     (m1 m2 : itree_spec E2 R2) (t1 : itree_spec E1 R1),
     refinesF RE REAns RR (upaco2 (refines_ RE REAns RR) bot2)
@@ -960,7 +960,7 @@ Theorem refinesTrans {E1 E2 E3 R1 R2 R3} RE1 RE2 REAns1 REAns2
         (t1 : itree_spec E1 R1) (t2 : itree_spec E2 R2) (t3 : itree_spec E3 R3):
   padded t1 -> padded t2 -> padded t3 ->
   refines RE1 REAns1 RR1 t1 t2 -> refines RE2 REAns2 RR2 t2 t3 ->
-  refines (rcomposeE RE1 RE2) (rcomposeEAns REAns1 REAns2
+  refines (rcomposePreRel RE1 RE2) (rcomposePostRel REAns1 REAns2
                                   (fun A B C e1 e2 e3 => RE1 A B e1 e2 /\ RE2 B C e2 e3))
           (rcompose RR1 RR2) t1 t3.
 Proof.
@@ -1697,7 +1697,7 @@ Qed.
 
 Section Refines5.
   Context {E1 E2 : Type -> Type}.
-  Context (RE : relationEH E1 E2) (REAns : relationEAns E1 E2).
+  Context (RE : PreRel E1 E2) (REAns : PostRel E1 E2).
 
   Inductive refines5F (F : forall R1 R2, (R1 -> R2 -> Prop) -> itree_spec E1 R1 -> itree_spec E2 R2 -> Prop) :
      forall R1 R2, (R1 -> R2 -> Prop) -> itree_spec' E1 R1 -> itree_spec' E2 R2 -> Prop :=
@@ -1852,21 +1852,21 @@ Context (D1 D2 E1 E2 : Type -> Type).
 
 Context (bodies1 : D1 ~> itree_spec (D1 +' E1)) (bodies2 : D2 ~> itree_spec (D2 +' E2)).
 
-Context (RE : relationEH E1 E2) (REAns : relationEAns E1 E2).
-Context (REInv : relationEH D1 D2) (REAnsInv : relationEAns D1 D2).
+Context (RE : PreRel E1 E2) (REAns : PostRel E1 E2).
+Context (REInv : PreRel D1 D2) (REAnsInv : PostRel D1 D2).
 
 Context (Hbodies : forall A B (d1 : D1 A) (d2 : D2 B),
-            REInv A B d1 d2 -> refines (sum_relE REInv RE) (sum_relEAns REAnsInv REAns)
+            REInv A B d1 d2 -> refines (sumPreRel REInv RE) (sumPostRel REAnsInv REAns)
                                  (REAnsInv A B d1 d2) (bodies1 A d1) (bodies2 B d2)).
 
 (*         (forall (phi2 : itree_spec (D2 +' E2) B) (phi1 : itree_spec (D1 +' E1) A),
-            paco2 (refines_ (sum_relE REInv RE) (sum_relEAns REAnsInv REAns) (REAnsInv A B d1 d2)) bot2 phi1
+            paco2 (refines_ (sumPreRel REInv RE) (sumPostRel REAnsInv REAns) (REAnsInv A B d1 d2)) bot2 phi1
                   phi2 ->
             r A B (REAnsInv A B d1 d2) (interp_mrec_spec' bodies1 (observe phi1))
               (interp_mrec_spec' bodies2 (observe phi2))) *)
 
 Theorem refines_interp_mrec : forall A B RR (t1 : itree_spec (D1 +' E1) A) (t2 : itree_spec (D2 +' E2) B),
-                                refines (sum_relE REInv RE) (sum_relEAns REAnsInv REAns) RR t1 t2 ->
+                                refines (sumPreRel REInv RE) (sumPostRel REAnsInv REAns) RR t1 t2 ->
                                 refines RE REAns RR (interp_mrec_spec bodies1 t1) (interp_mrec_spec bodies2 t2).
 Proof.
   intros. apply refines5_to_refines. generalize dependent B.
@@ -1875,9 +1875,9 @@ Proof.
     try (cbn; econstructor; eauto; fail).
   destruct H.
   - cbn. constructor. right. eapply CIH. eapply refines_bind; eauto.
-    intros. eapply sum_relEAns_inl in H1. eapply H0 in H1. pclearbot. auto.
+    intros. eapply sumPostRel_inl in H1. eapply H0 in H1. pclearbot. auto.
   - cbn. constructor; auto. intros. right. eapply CIH; eauto.
-    eapply sum_relEAns_inr in H1. eapply H0 in H1. pclearbot. auto.
+    eapply sumPostRel_inr in H1. eapply H0 in H1. pclearbot. auto.
 Qed.
 
 Theorem refines_mrec : forall A B (init1 : D1 A) (init2 : D2 B),
@@ -1895,12 +1895,12 @@ Context (D1 D2 E1 E2 : Type -> Type).
 
 Context (bodies1 : D1 ~> itree_spec (D1 +' E1)) (bodies2 : D2 ~> itree_spec (D2 +' E2)).
 
-Context (RE : relationEH E1 E2) (REAns : relationEAns E1 E2).
-Context (REInv : relationEH D1 D2) (REAnsInv : relationEAns D1 D2).
+Context (RE : PreRel E1 E2) (REAns : PostRel E1 E2).
+Context (REInv : PreRel D1 D2) (REAnsInv : PostRel D1 D2).
 
 Context (Hbodies : forall A B (d1 : D1 A) (d2 : D2 B),
-            REInv A B d1 d2 -> padded_refines (sum_relE REInv RE)
-                                             (sum_relEAns REAnsInv REAns)
+            REInv A B d1 d2 -> padded_refines (sumPreRel REInv RE)
+                                             (sumPostRel REAnsInv REAns)
                                  (REAnsInv A B d1 d2) (bodies1 A d1) (bodies2 B d2)).
 
 Theorem padded_refines_mrec : forall A B (init1 : D1 A) (init2 : D2 B),
@@ -1917,7 +1917,7 @@ Proof.
 Qed.
 
 Theorem padded_refines_interp_mrec : forall A B RR (t1 : itree_spec (D1 +' E1) A) (t2 : itree_spec (D2 +' E2) B),
-                                padded_refines (sum_relE REInv RE) (sum_relEAns REAnsInv REAns) RR t1 t2 ->
+                                padded_refines (sumPreRel REInv RE) (sumPostRel REAnsInv REAns) RR t1 t2 ->
                                 padded_refines RE REAns RR (interp_mrec_spec bodies1 t1) (interp_mrec_spec bodies2 t2).
 Proof.
   intros. unfold padded_refines in *.

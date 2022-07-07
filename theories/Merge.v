@@ -288,7 +288,7 @@ Definition sort_spec {E} (l : list nat) : itree_spec E (list nat) :=
 
 
 Definition padded_refines_eq {E R1 R2} RR (phi1 : itree_spec E R1) (phi2 : itree_spec E R2) :=
-  padded_refines eqE eqEAns RR phi1 phi2.
+  padded_refines eqPreRel eqPostRel RR phi1 phi2.
 
 Instance proper_leq : Proper (le ==> le ==> le) plus.
 Proof.
@@ -321,28 +321,28 @@ Proof.
   repeat intro. eapply refines_proper_bind. auto. subst. intro. reflexivity.
 Qed.
 
-Lemma eqE_eq_type E A B (ea : E A) (eb : E B) : eqE A B ea eb -> A = B.
+Lemma eqPreRel_eq_type E A B (ea : E A) (eb : E B) : eqPreRel A B ea eb -> A = B.
 Proof.
   intros. inv H. auto.
 Qed.
 
-Lemma eqE_eq E A (e1 : E A) (e2 : E A) : eqE A A e1 e2 -> e1 = e2.
+Lemma eqPreRel_eq E A (e1 : E A) (e2 : E A) : eqPreRel A A e1 e2 -> e1 = e2.
 Proof.
   intros. inv H. inj_existT. subst. auto.
 Qed.
 
-Lemma eqEAns_eq_type E A B (ea : E A) (eb : E B) a b : eqEAns A B ea eb a b -> A = B.
+Lemma eqPostRel_eq_type E A B (ea : E A) (eb : E B) a b : eqPostRel A B ea eb a b -> A = B.
 Proof.
   intros. inv H. auto.
 Qed.
 
-Lemma eqEAns_eq E A (e1 : E A) (e2 : E A) a1 a2 : eqEAns A A e1 e2 a1 a2 -> e1 = e2 /\ a1 = a2.
+Lemma eqPostRel_eq E A (e1 : E A) (e2 : E A) a1 a2 : eqPostRel A A e1 e2 a1 a2 -> e1 = e2 /\ a1 = a2.
 Proof.
   intros. inv H. inj_existT. subst. auto.
 Qed.
 
-Ltac eqE_inv H := apply eqE_eq_type in H as ?H; subst; apply eqE_eq in H; subst.
-Ltac eqEAns_inv H := apply eqEAns_eq_type in H as ?H; subst; apply eqEAns_eq in H as [?H ?H]; subst.
+Ltac eqPreRel_inv H := apply eqPreRel_eq_type in H as ?H; subst; apply eqPreRel_eq in H; subst.
+Ltac eqPostRel_inv H := apply eqPostRel_eq_type in H as ?H; subst; apply eqPostRel_eq in H as [?H ?H]; subst.
 
 Global Instance padded_refines_eq_trans {E R} : Transitive (@padded_refines_eq E R R eq).
 Proof.
@@ -365,16 +365,16 @@ Global Instance refines_proper_interp_mrec_spec E D R :
          (fun ctx => @interp_mrec_spec D E ctx R).
 Proof.
   repeat intro. subst. unfold padded_refines_eq in *.
-  eapply padded_refines_interp_mrec with (REInv := eqE) (REAnsInv := eqEAns) ; eauto.
+  eapply padded_refines_interp_mrec with (REInv := eqPreRel) (REAnsInv := eqPostRel) ; eauto.
   - intros.
-    eqE_inv H1.
+    eqPreRel_inv H1.
     eapply refines_monot; try eapply H.
-    + intros.  eqE_inv PR. destruct x2; repeat constructor.
-    + intros. inv PR; inj_existT; subst; eqEAns_inv H7; constructor.
+    + intros.  eqPreRel_inv PR. destruct x2; repeat constructor.
+    + intros. inv PR; inj_existT; subst; eqPostRel_inv H7; constructor.
     + intros. subst. constructor.
   - eapply refines_monot; try eapply H0.
-    + intros. eqE_inv PR. destruct x2; repeat constructor.
-    + intros. inv PR; inj_existT; subst; eqEAns_inv H7; constructor.
+    + intros. eqPreRel_inv PR. destruct x2; repeat constructor.
+    + intros. inv PR; inj_existT; subst; eqPostRel_inv H7; constructor.
     + auto.
 Qed.
 

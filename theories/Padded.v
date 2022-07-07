@@ -11,7 +11,7 @@ Ltac inj_existT := repeat match goal with | H : existT _ _ _ = _ |- _ => apply i
 Variant paddedF {E R} (F : itree E R -> Prop) : itree' E R -> Prop :=
   | paddedF_Ret r : paddedF F (RetF r)
   | paddedF_Tau t : F t -> paddedF F (TauF t)
-  | paddedF_VisTau A e (k : A -> itree E R) :
+  | paddedF_Vis A e (k : A -> itree E R) :
     (forall a, F (k a)) -> paddedF F (VisF e (fun a => (Tau (k a))))
 .
 

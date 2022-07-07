@@ -2,65 +2,57 @@ From Coq Require Export Morphisms Setoid Program.Equality.
 From ITree Require Export ITree ITreeFacts HeterogeneousRelations.
 
 
-Definition dep_prod_rel {R1 R2} (RR1 : R1 -> R2 -> Prop)
-  (RR2 : forall r1 r2, RR1 r1 r2 -> Prop) : R1 -> R2 -> Prop :=
+Notation Rel A B := (A -> B -> Prop).
+
+Definition depProdRel {A B} (RR1 : Rel A B)
+  (RR2 : forall a b, RR1 a b -> Prop) : Rel A B :=
   fun r1 r2 => { p : RR1 r1 r2 | RR2 r1 r2 p }.
 
 
-Definition relationEH (E1 E2 : Type -> Type) : Type := forall A B, E1 A -> E2 B -> Prop.
+Notation PreRel E1 E2 := (forall (A B : Type), (E1 A : Type) -> (E2 B : Type) -> Prop).
 
 (*this is stronger than we need *)
-Class ReflexiveE {E : Type -> Type} (RE : relationEH E E) : Prop :=
-  reflexiveE : forall A (e : E A), RE A A e e.
+Class ReflexivePreRel {E : Type -> Type} (RE : PreRel E E) : Prop :=
+  reflexivePreRel : forall A (e : E A), RE A A e e.
 
-Class SymmetricE {E : Type -> Type} (RE : relationEH E E) : Prop :=
-  symmetricE : forall A B (e1 : E A) (e2 : E B), RE A B e1 e2 -> RE B A e2 e1.
+Class SymmetricPreRel {E : Type -> Type} (RE : PreRel E E) : Prop :=
+  symmetricPreRel : forall A B (e1 : E A) (e2 : E B), RE A B e1 e2 -> RE B A e2 e1.
 
-Class TransitiveE {E : Type -> Type} (RE : relationEH E E) : Prop :=
-  transitiveE : forall A B C (e1 : E A) (e2 : E B) (e3 : E C),
+Class TransitivePreRel {E : Type -> Type} (RE : PreRel E E) : Prop :=
+  transitivePreRel : forall A B C (e1 : E A) (e2 : E B) (e3 : E C),
     RE A B e1 e2 -> RE B C e2 e3 -> RE A C e1 e3.
 
-Definition flipE {E1 E2 : Type -> Type} (RE : relationEH E1 E2) : relationEH E2 E1 :=
+Definition flipPreRel {E1 E2 : Type -> Type} (RE : PreRel E1 E2) : PreRel E2 E1 :=
   fun A B e1 e2 => RE B A e2 e1.
 
-Variant rcomposeE {E1 E2 E3 : Type -> Type}
-           (RE12 : relationEH E1 E2) (RE23 : relationEH E2 E3) : forall A C, E1 A -> E3 C -> Prop :=
-  rcomposeE_intro (A B C: Type) e1 e2 e3 : RE12 A B e1 e2 -> RE23 B C e2 e3 -> rcomposeE RE12 RE23 A C e1 e3.
+Variant rcomposePreRel {E1 E2 E3 : Type -> Type}
+           (RE12 : PreRel E1 E2) (RE23 : PreRel E2 E3) : forall A C, E1 A -> E3 C -> Prop :=
+  rcomposePreRel_intro (A B C: Type) e1 e2 e3 : RE12 A B e1 e2 -> RE23 B C e2 e3 -> rcomposePreRel RE12 RE23 A C e1 e3.
 
-(* notation issues*)
-Variant sum_relE {E1 E2 F1 F2} (REE : relationEH E1 E2) (REF : relationEH F1 F2) : forall A B, (E1 +' F1) A -> (E2 +' F2) B -> Prop :=
-| sum_relE_inl A B (e1 : E1 A) (e2 : E2 B) : REE A B e1 e2 -> sum_relE REE REF A B (inl1 e1) (inl1 e2)
-| sum_relE_inr A B (f1 : F1 A) (f2 : F2 B) : REF A B f1 f2 -> sum_relE REE REF A B (inr1 f1) (inr1 f2).
-
-Definition relationEAnsH (E1 E2 : Type -> Type) : Type := forall A B, E1 A -> A -> E2 B -> B -> Prop.
+Variant sumPreRel {E1 E2 F1 F2} (REE : PreRel E1 E2) (REF : PreRel F1 F2) : forall A B, (E1 +' F1) A -> (E2 +' F2) B -> Prop :=
+| sumPreRel_inl A B (e1 : E1 A) (e2 : E2 B) : REE A B e1 e2 -> sumPreRel REE REF A B (inl1 e1) (inl1 e2)
+| sumPreRel_inr A B (f1 : F1 A) (f2 : F2 B) : REF A B f1 f2 -> sumPreRel REE REF A B (inr1 f1) (inr1 f2).
 
 
-Variant sum_relAns {E1 E2 F1 F2} (REE : relationEAnsH E1 E2) (REF : relationEAnsH F1 F2) :
-  forall A B, (E1 +' F1) A -> A -> (E2 +' F2) B -> B -> Prop :=
-| sum_relAns_inl A B (e1 : E1 A) (e2 : E2 B) a b : REE A B e1 a e2 b -> sum_relAns REE REF A B (inl1 e1) a (inl1 e2) b
-| sum_relAns_inr A B (f1 : F1 A) (f2 : F2 B) a b : REF A B f1 a f2 b -> sum_relAns REE REF A B (inr1 f1) a (inr1 f2) b
-.
+Notation PostRel E1 E2 := (forall (A B : Type), (E1 A : Type) -> (E2 B : Type) -> A -> B -> Prop).
 
-Definition relationEAns (E1 E2 : Type -> Type) : Type := forall A B, E1 A -> E2 B -> A -> B -> Prop.
-
-
-Variant sum_relEAns {E1 E2 F1 F2} (REE : relationEAns E1 E2) (REF : relationEAns F1 F2) :
+Variant sumPostRel {E1 E2 F1 F2} (REE : PostRel E1 E2) (REF : PostRel F1 F2) :
   forall A B, (E1 +' F1) A -> (E2 +' F2) B -> A -> B -> Prop :=
-| sum_relEAns_inl A B (e1 : E1 A) (e2 : E2 B) a b : REE A B e1 e2 a b -> sum_relEAns REE REF A B (inl1 e1) (inl1 e2) a b
-| sum_relEAns_inr A B (f1 : F1 A) (f2 : F2 B) a b : REF A B f1 f2 a b -> sum_relEAns REE REF A B (inr1 f1) (inr1 f2) a b
+| sumPostRel_inl A B (e1 : E1 A) (e2 : E2 B) a b : REE A B e1 e2 a b -> sumPostRel REE REF A B (inl1 e1) (inl1 e2) a b
+| sumPostRel_inr A B (f1 : F1 A) (f2 : F2 B) a b : REF A B f1 f2 a b -> sumPostRel REE REF A B (inr1 f1) (inr1 f2) a b
 .
 
-(* This may need to be defined in dependent on two relationEH's?*)
+(* This may need to be defined in dependent on two PreRel's?*)
 (*
-Variant rcomposeEAns' {E1 E2 E3 : Type -> Type}
-           (RE12 : relationEAns E1 E2) (RE23 : relationEAns E2 E3):
+Variant rcomposePostRel' {E1 E2 E3 : Type -> Type}
+           (RE12 : PostRel E1 E2) (RE23 : PostRel E2 E3):
   forall A C, E1 A -> E3 C -> A -> C -> Prop :=
-  | rcomposeEAns_intro (A B C : Type)
+  | rcomposePostRel_intro (A B C : Type)
                        (*maybe I should somehow universally quantify this*)
                        (e1 : E1 A) (e2 : E2 B) (e3 : E3 C)
                        a b c :
     RE12 A B e1 e2 a b -> RE23 B C e2 e3 b c ->
-    rcomposeEAns RE12 RE23 A C e1 e3 a c.
+    rcomposePostRel RE12 RE23 A C e1 e3 a c.
 *)
 
 
@@ -69,43 +61,41 @@ Variant rcomposeEAns' {E1 E2 E3 : Type -> Type}
    the problem is what if the post condition is empty I should think of
    a new case for this possibility
  *)
-Variant rcomposeEAns {E1 E2 E3 : Type -> Type}
-           (RE12 : relationEAns E1 E2) (RE23 : relationEAns E2 E3)
+Variant rcomposePostRel {E1 E2 E3 : Type -> Type}
+           (RE12 : PostRel E1 E2) (RE23 : PostRel E2 E3)
            (RE : forall A B C, E1 A -> E2 B -> E3 C -> Prop)
   :
   forall A C, E1 A -> E3 C -> A -> C -> Prop :=
-  | rcomposeEAns_intro (A C : Type)
+  | rcomposePostRel_intro (A C : Type)
                        (e1 : E1 A) (e3 : E3 C)
                        a c :
     (forall B (e2 : E2 B),
       RE A B C e1 e2 e3 -> exists b, RE12 A B e1 e2 a b /\ RE23 B C e2 e3 b c) ->
-    rcomposeEAns RE12 RE23 RE A C e1 e3 a c.
-
-
+    rcomposePostRel RE12 RE23 RE A C e1 e3 a c.
 
 (*this is stronger than I need*)
 (* I see 2 ways to do it, either it is reflexive wrt RE
    or *)
-Class ReflexiveEAns {E : Type -> Type} (REA : relationEAns E E) : Prop :=
-  reflexiveEAns : forall A (e : E A) (a b : A),
+Class ReflexivePostRel {E : Type -> Type} (REA : PostRel E E) : Prop :=
+  reflexivePostRel : forall A (e : E A) (a b : A),
       REA A A e e a b -> a = b.
 
-Class SymmetricEAns {E : Type -> Type} (REA : relationEAns E E) : Prop :=
-  symmetricEAns : forall A B (e1 : E A) (e2 : E B) a b,
+Class SymmetricPostRel {E : Type -> Type} (REA : PostRel E E) : Prop :=
+  symmetricPostRel : forall A B (e1 : E A) (e2 : E B) a b,
       REA A B e1 e2 a b -> REA B A e2 e1 b a.
 
 
-Variant eqE {E} : forall A B : Type, E A -> E B -> Prop :=
-  | eqE_eq A (e : E A) : eqE A A e e.
+Variant eqPreRel {E} : PreRel E E :=
+  | eqPreRel_refl A (e : E A) : eqPreRel A A e e.
 
-Variant eqEAns {E} : forall A B : Type, E A -> E B -> A -> B -> Prop :=
-  | eqEAns_eq A e a : eqEAns A A e e a a.
+Variant eqPostRel {E} : PostRel E E :=
+  | eqPostRel_refl A e a : eqPostRel A A e e a a.
 
-Variant sub_eqE {E} (P : forall A, E A -> Prop) : forall A B : Type, E A -> E B -> Prop :=
-  | sub_eqE_eq A (e : E A) : P A e -> sub_eqE P A A e e.
+Variant subEqPreRel {E} (P : forall A, E A -> Prop) : PreRel E E :=
+  | subEqPreRel_intro A (e : E A) : P A e -> subEqPreRel P A A e e.
 
-Variant sub_eqEAns {E} (P : forall A, E A -> A -> Prop) : forall A B : Type, E A -> E B -> A -> B -> Prop :=
-  | sub_eqEAns_eq A e a : P A e a -> sub_eqEAns P A A e e a a.
+Variant subEqPostRel {E} (P : forall A, E A -> A -> Prop) : PostRel E E :=
+  | subEqPostRel_intro A e a : P A e a -> subEqPostRel P A A e e a a.
 
-Variant sub_eq {A: Type} (P : A -> Prop) : A -> A -> Prop :=
-  | sub_eq_intro a : P a -> sub_eq P a a.
+Variant subEqRel {A: Type} (P : A -> Prop) : Rel A A :=
+  | subEqRel_intro a : P a -> subEqRel P a a.

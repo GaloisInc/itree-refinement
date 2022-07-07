@@ -101,15 +101,15 @@ Variant halve_call : forall A, callE (list nat) (list nat * list nat) A -> A -> 
 
 Lemma halve_correct' E l : padded_refines_eq eq (@halve E l) (halve_spec_fix l).
 Proof.
-  eapply padded_refines_monot with (RE1 := eqE)
-                                   (REAns1 := eqEAns)
-                                   (RR1 := sub_eqEAns halve_call _ _ (Call l) (Call l)); eauto.
+  eapply padded_refines_monot with (RE1 := eqPreRel)
+                                   (REAns1 := eqPostRel)
+                                   (RR1 := subEqPostRel halve_call _ _ (Call l) (Call l)); eauto.
   { intros [l1 l2] [l3 l4]. intros. inv PR. inj_existT. subst. auto. }
-  eapply padded_refines_mrec with (REInv := eqE)
+  eapply padded_refines_mrec with (REInv := eqPreRel)
                                   (* in this post condition need to include *)
-                                  (REAnsInv := sub_eqEAns halve_call).
+                                  (REAnsInv := subEqPostRel halve_call).
   2 : constructor. intros.
-  eqE_inv H. clear l. destruct d2 as [l]. cbn.
+  eqPreRel_inv H. clear l. destruct d2 as [l]. cbn.
   destruct l as [ | a [ | b l] ].
   - existssr 0. rewrite trepeat_0. rewrite bind_ret_l.
     existssr (@nil nat). existssr (@nil nat). assertsr. reflexivity.
@@ -123,7 +123,7 @@ Proof.
   - cbn. existssr 1. rewrite trepeat_Sn. setoid_rewrite trepeat_0.
     cbn. repeat rewrite bind_bind. existssr l.
     eapply padded_refines_bind with (RR :=
-                                    sub_eqEAns halve_call (list nat * list nat) (list nat * list nat) (Call (l)) (Call (l))).
+                                    subEqPostRel halve_call (list nat * list nat) (list nat * list nat) (Call (l)) (Call (l))).
     + unfold call_spec. apply padded_refines_vis. repeat constructor.
       intros [l1 l2] r Hl12. inv Hl12. inj_existT. subst.
       inv H5. inj_existT. subst. apply padded_refines_ret.
@@ -532,19 +532,19 @@ Section SpecFix.
   Proof.
     intros Hfix. apply partial_spec_fix_partial_spec'.
     intros Ha. specialize (Hfix Ha). etransitivity; eauto.
-    eapply padded_refines_monot with (RE1 := eqE) (REAns1 := eqEAns)
-    (RR1 := eqEAns _ _ (Call a) (Call a)); auto.
-    { intros. eqEAns_inv PR. auto. }
-    eapply padded_refines_mrec with (REInv := eqE).
+    eapply padded_refines_monot with (RE1 := eqPreRel) (REAns1 := eqPostRel)
+    (RR1 := eqPostRel _ _ (Call a) (Call a)); auto.
+    { intros. eqPostRel_inv PR. auto. }
+    eapply padded_refines_mrec with (REInv := eqPreRel).
     2 : constructor.
-    intros. eqE_inv H. clear Ha Hfix a. destruct d2.
+    intros. eqPreRel_inv H. clear Ha Hfix a. destruct d2.
     simpl. assumesr. intros Ha. assumesl. auto.
     repeat rewrite bind_bind.
     existssl. intros n. existssr n.
     apply padded_refines_bind with (RR := eq).
     + apply refl_refines. red. intros. destruct e; do 2 constructor.
-      red. intros. inv H. inj_existT. subst. eqEAns_inv  H6. auto.
-      inj_existT. subst. eqEAns_inv H6. auto.
+      red. intros. inv H. inj_existT. subst. eqPostRel_inv  H6. auto.
+      inj_existT. subst. eqPostRel_inv H6. auto.
       auto. apply pad_is_padded.
     + intros [] [] _ .
       apply or_spec_r. left. existssl. intros b.
@@ -579,15 +579,15 @@ Lemma halve_spec_fix_correct' E l :
                                                    (fun l '(l1,l2) => Permutation l (l1 ++ l2) /\
                                (length l1 >= length l2 /\ (length l > length l1 \/ length l <= 1))) l).
 Proof.
-  eapply padded_refines_monot with (RE1 := eqE)
-                                   (REAns1 := eqEAns)
-                                   (RR1 := sub_eqEAns halve_call _ _ (Call l) (Call l)); eauto.
+  eapply padded_refines_monot with (RE1 := eqPreRel)
+                                   (REAns1 := eqPostRel)
+                                   (RR1 := subEqPostRel halve_call _ _ (Call l) (Call l)); eauto.
   { intros [l1 l2] [l3 l4]. intros. inv PR. inj_existT. subst. auto. }
-    eapply padded_refines_mrec with (REInv := eqE)
+    eapply padded_refines_mrec with (REInv := eqPreRel)
                                   (* in this post condition need to include *)
-                                  (REAnsInv := sub_eqEAns halve_call).
+                                  (REAnsInv := subEqPostRel halve_call).
   2 : constructor. intros.
-  eqE_inv H. clear l. destruct d2 as [l]. cbn.
+  eqPreRel_inv H. clear l. destruct d2 as [l]. cbn.
   destruct l as [ | a [ | b l] ].
   - assumesr. intros _. rewrite bind_bind. existssr 0.
     cbn. rewrite bind_ret_l. existssr (@nil nat,@nil nat).
@@ -602,7 +602,7 @@ Proof.
     repeat rewrite bind_bind.
     assertsr. auto. setoid_rewrite bind_ret_l.
     eapply padded_refines_bind with  (RR :=
-                                    sub_eqEAns halve_call (list nat * list nat) (list nat * list nat) (Call (l)) (Call (l))).
+                                    subEqPostRel halve_call (list nat * list nat) (list nat * list nat) (Call (l)) (Call (l))).
     { apply padded_refines_vis. constructor. constructor. intros [l1 l2] b0 Hl12.
       inv Hl12. inj_existT. subst. inv H5. inj_existT. subst.
       apply padded_refines_ret. constructor. auto. }
@@ -619,46 +619,46 @@ Proof.
  Qed.
 
 
-Lemma sub_eqE_eq_type E P A B (ea : E A) (eb : E B) : sub_eqE P A B ea eb -> A = B.
+Lemma subEqPreRel_eq_type E P A B (ea : E A) (eb : E B) : subEqPreRel P A B ea eb -> A = B.
 Proof.
   intros. inv H. auto.
 Qed.
 
-Lemma sub_eqE_eq E P A (e1 : E A) (e2 : E A) : sub_eqE P A A e1 e2 -> e1 = e2 /\ P A e1.
+Lemma subEqPreRel_eq E P A (e1 : E A) (e2 : E A) : subEqPreRel P A A e1 e2 -> e1 = e2 /\ P A e1.
 Proof.
   intros. inv H. inj_existT. subst. auto.
 Qed.
 
-Lemma sub_eqEAns_eq_type E P A B (ea : E A) (eb : E B) a b : sub_eqEAns P A B ea eb a b -> A = B.
+Lemma subEqPostRel_eq_type E P A B (ea : E A) (eb : E B) a b : subEqPostRel P A B ea eb a b -> A = B.
 Proof.
   intros. inv H. auto.
 Qed.
 
-Lemma sub_eqEAns_eq E P A (e1 : E A) (e2 : E A) a1 a2 : sub_eqEAns P A A e1 e2 a1 a2 -> e1 = e2 /\ a1 = a2
+Lemma subEqPostRel_eq E P A (e1 : E A) (e2 : E A) a1 a2 : subEqPostRel P A A e1 e2 a1 a2 -> e1 = e2 /\ a1 = a2
                                                                                  /\ P A e1 a1.
 Proof.
   intros. inv H. inj_existT. subst. auto.
 Qed.
 
-Ltac sub_eqE_inv H := eapply sub_eqE_eq_type in H as ?H; subst; eapply sub_eqE_eq in H as [?H ?H] ; subst.
-Ltac sub_eqEAns_inv H := apply sub_eqEAns_eq_type in H as ?H; subst; apply sub_eqEAns_eq in H as [?H [?H ?H] ]; subst.
+Ltac subEqPreRel_inv H := eapply subEqPreRel_eq_type in H as ?H; subst; eapply subEqPreRel_eq in H as [?H ?H] ; subst.
+Ltac subEqPostRel_inv H := apply subEqPostRel_eq_type in H as ?H; subst; apply subEqPostRel_eq in H as [?H [?H ?H] ]; subst.
 
 
-Global Instance padded_refines_sub_eq E R (RR : R -> R -> Prop) (P1 : forall A, E A -> Prop) (P2 : forall A, E A -> A -> Prop) :
+Global Instance padded_refines_subEqRel E R (RR : R -> R -> Prop) (P1 : forall A, E A -> Prop) (P2 : forall A, E A -> A -> Prop) :
   Transitive RR ->
-  Transitive (padded_refines (sub_eqE P1) (sub_eqEAns P2) RR).
+  Transitive (padded_refines (subEqPreRel P1) (subEqPostRel P2) RR).
 Proof.
   intros HRR t1 t2 t3 Ht12 Ht23. unfold padded_refines in *.
   eapply refines_monot; try eapply refinesTrans; eauto with solve_padded; try apply pad_is_padded.
-  - intros A B ea eb PR. inv PR. inj_existT. subst. sub_eqE_inv H3. auto.
-  - intros. sub_eqEAns_inv  PR. constructor. intros. destruct H. sub_eqE_inv H.
+  - intros A B ea eb PR. inv PR. inj_existT. subst. subEqPreRel_inv H3. auto.
+  - intros. subEqPostRel_inv  PR. constructor. intros. destruct H. subEqPreRel_inv H.
     exists x1. split; constructor; auto.
   - intros. inv PR. etransitivity; eauto.
 Qed.
 
-Global Instance sub_eqEAns_trans E (P : forall A, E A -> A -> Prop) A (e : E A) : Transitive (sub_eqEAns P A A e e).
+Global Instance subEqPostRel_trans E (P : forall A, E A -> A -> Prop) A (e : E A) : Transitive (subEqPostRel P A A e e).
 Proof.
-  intros x y z Hxy Hyz. sub_eqEAns_inv Hxy. auto.
+  intros x y z Hxy Hyz. subEqPostRel_inv Hxy. auto.
 Qed.
 
 (* I think I can save the rest for tomorrow*)
@@ -679,14 +679,14 @@ Global Instance  padded_refines_eq_gen E1 E2 R1 R2 RE REAns RR : Proper (padded_
 Proof.
   intros t1 t2 Ht12 t3 t4 Ht43. red in Ht43. intro.
   unfold padded_refines_eq, padded_refines in *. rename H into H24.
-  specialize @refinesTrans with (E1 := E1) (E2 := E1) (E3 := E2) (RE1 := eqE) (RE2 := RE) as Htrans.
+  specialize @refinesTrans with (E1 := E1) (E2 := E1) (E3 := E2) (RE1 := eqPreRel) (RE2 := RE) as Htrans.
   eapply Htrans in Ht12; eauto; try apply pad_is_padded. clear Htrans.
-  specialize @refinesTrans with (E1 := E1) (E2 := E2) (E3 := E2) (RE1 := rcomposeE eqE RE) (RE2 := eqE) as Htrans.
+  specialize @refinesTrans with (E1 := E1) (E2 := E2) (E3 := E2) (RE1 := rcomposePreRel eqPreRel RE) (RE2 := eqPreRel) as Htrans.
   eapply Htrans in Ht12; eauto; try apply pad_is_padded. eapply refines_monot; try eapply Ht12.
-  { intros. destruct PR. destruct H. eqE_inv H. eqE_inv H0. auto. }
-  { intros. econstructor. intros. destruct H. eqE_inv H0.
-    inv H. inj_existT. subst. eqE_inv H4. exists x1. split. 2 : constructor.
-    constructor. intros. destruct H. eqE_inv H. exists x0. split; auto. constructor.
+  { intros. destruct PR. destruct H. eqPreRel_inv H. eqPreRel_inv H0. auto. }
+  { intros. econstructor. intros. destruct H. eqPreRel_inv H0.
+    inv H. inj_existT. subst. eqPreRel_inv H4. exists x1. split. 2 : constructor.
+    constructor. intros. destruct H. eqPreRel_inv H. exists x0. split; auto. constructor.
   }
   { intros. inv PR. inv REL1. auto. }
 Qed.
