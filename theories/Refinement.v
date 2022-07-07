@@ -166,7 +166,6 @@ Proof.
     hinduction Ht12 before r; intros; subst; try inv Heqx; eauto.
     inj_existT. subst. pclearbot. constructor. right. eapply CIH; eauto. apply REL. apply H.
 Qed.
-Print Assumptions not_Proper_eutt_satisfies_impl. (* eq_rect_eq *)
 
 Section Refines.
 (***
@@ -276,12 +275,12 @@ Proof.
   - constructor. right. eapply CIH; eauto.
   - constructor. auto. left. pstep. constructor.
     apply HRPost in H0. subst. right. eapply CIH; eauto. apply H1.
-  - apply refines_forallR. intros. apply refines_forallL with (a0 := a).
+  - apply refines_forallR. intro a0. apply refines_forallL with (a := a0).
     constructor. right. eapply CIH; eauto. apply H1.
-  - apply refines_existsL. intros. apply refines_existsR with (a0 := a).
+  - apply refines_existsL. intro a0. apply refines_existsR with (a := a0).
     constructor. right. eapply CIH; apply H1.
 Qed.
-Print Assumptions refl_refines. (* closed *)
+
 (*  red. pcofix CIH. intros HRR HRPre HRPost t. pfold. red.
   destruct (observe t); try destruct e; econstructor; eauto.
   intros. right. apply HRPre in H. subst. eauto.
@@ -325,7 +324,6 @@ Proof.
     { punfold H1. }
     eapply paco2_mon; eauto. intros; contradiction.
 Qed.
-Print Assumptions refines_Vis_forallR. (* eq_rect_eq *)
 
 Lemma refines_Vis_existsL : forall (E1 E2 : Type -> Type) (R1 R2 A : Type) RPre RPost RR
                               (t : itree_spec E1 R1) (k : A -> itree_spec E2 R2),
@@ -338,7 +336,6 @@ Proof.
   remember (VisF Spec_exists k) as x.
   hinduction Href before A; intros; inv Heqx; inj_existT; subst; eauto.
 Qed.
-Print Assumptions refines_Vis_existsL. (*eq_rect_eq *)
 (* my next task is to understand this forallRefinesF predicate,
    and replicate it for exists  *)
 
@@ -394,7 +391,6 @@ Proof.
   - inversion Heqt1. subst. inj_existT. subst. econstructor; eauto.
   - eapply forallRefines_existsR. eauto.
 Qed.
-Print Assumptions refinesF_Vis_forallL. (* eq_rect_eq *)
 
 Lemma refinesF_Vis_existsR : forall E1 E2 R1 R2 A RPre RAns RR F
                                (t : itree_spec' E1 R1) (k : A -> itree_spec E2 R2),
@@ -408,7 +404,6 @@ Proof.
   - econstructor. eauto.
   - apply existsRefines_existsL. intros. eauto.
 Qed.
-Print Assumptions refinesF_Vis_existsR. (* eq_rect_eq *)
 
 
 Lemma refines_TauL_inv : forall (E1 E2 : Type -> Type) (R1 R2: Type) RPre RAns RR
@@ -552,7 +547,6 @@ Proof.
   - inv H.
   - inv H1.
 Qed.
-Print Assumptions refines_Vis_existsR. (* closed *)
 
 Lemma paddedF_TauF_hint:
   forall (E1 : Type -> Type) (R1 : Type) (phi1 : itree_spec E1 R1), paddedF (upaco1 padded_ bot1) (TauF phi1) -> padded phi1.
@@ -615,7 +609,6 @@ Proof.
   intros. inv H. constructor. left. pclearbot. punfold H2. red in H2.
   rewrite <- H0 in H2. inv H2. pclearbot. auto.
 Qed.
-Print Assumptions paddedF_TauF_hint. (* closed *)
 #[local] Hint Resolve paddedF_TauF_hint : solve_padded.
 #[local] Hint Resolve paddedF_TauF_hint' : solve_padded.
 #[local] Hint Resolve paddedF_VisF_hint : solve_padded.
@@ -794,7 +787,6 @@ Proof.
     pstep_reverse. apply refines_TauL_inv. pstep. auto.
   - constructor. eapply IHHeutt; eauto. inv Hpad2. pclearbot. pstep_reverse.
 Qed.
-Print Assumptions refines_eutt_padded_l_tau_aux.
 
 
 Lemma refines_eutt_padded_r_tau_aux:
@@ -899,7 +891,6 @@ Proof.
     eapply refines_Vis_existsL in H. apply refines_TauL_inv. apply refines_TauR_inv.
     eauto.
 Qed.
-Print Assumptions refines_eutt_padded_r_tau_aux.
 
 
 Lemma refines_eutt_padded_r E1 E2 R1 R2 RPre RPost RR :
@@ -948,7 +939,6 @@ Proof.
   - eapply IHHeutt; eauto. pstep_reverse. apply refines_TauR_inv. pstep. auto.
   - constructor. eapply IHHeutt; eauto. inv Hpad3. pclearbot. pstep_reverse.
 Qed.
-(* Print Assumptions refines_eutt_padded_r. *)
 
 
 (* so whats next, *)
@@ -1162,7 +1152,6 @@ Proof.
     pstep_reverse. apply refines_Vis_existsL. pstep. auto.
   - constructor. intros. eapply H0; eauto with solve_padded.
 Qed.
-(* Print Assumptions refinesTrans. *)
 
 Lemma refines_monot E1 E2 R1 R2 RPre1 RPre2 RPost1 RPost2 RR1 RR2 :
   (forall A B, RPre1 A B <2= RPre2 A B) ->
@@ -1179,11 +1168,6 @@ Proof.
   right. auto.
 Qed.
 
-
-
-
-Print Assumptions refines_eutt_padded_r.
-(* happened again *)
 
 
 Definition padded_refines {E1 E2 R1 R2} RPre RPost RR (phi1 : itree_spec E1 R1) (phi2 : itree_spec E2 R2) :=

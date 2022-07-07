@@ -90,7 +90,6 @@ Proof.
   - exact ((Permutation a (fst r ++ snd r)) /\
            (length (fst r) >= length (snd r) /\ (length a > length (fst r) \/ length a <= 1))).
   - prove_refinement_continue.
-    Check padded_refines_trigger_bind_r.
     all: cbn; cbn in *.
     all: try split; try easy; try lia.
     + rewrite Permutation_app_comm. cbn.
