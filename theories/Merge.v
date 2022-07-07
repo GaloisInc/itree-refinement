@@ -138,27 +138,27 @@ Qed.
 
 Opaque assume_spec.
 
-Definition spec_exists {E} (T : Type) : itree_spec E T :=
+Definition exists_spec {E} (T : Type) : itree_spec E T :=
   trigger (@Spec_exists E T).
 
 
 (**)
-Lemma spec_exists_elim {E1 E2} S1 R2 S2 RPre RPost RR (phi : itree_spec E1 S1)
+Lemma exists_spec_elim {E1 E2} S1 R2 S2 RPre RPost RR (phi : itree_spec E1 S1)
       (kphi : R2 -> itree_spec E2 S2) r :
   refines RPre RPost RR phi (kphi r) ->
-  refines RPre RPost RR phi (ITree.bind (spec_exists R2) kphi).
+  refines RPre RPost RR phi (ITree.bind (exists_spec R2) kphi).
 Proof.
-  intros. unfold spec_exists. setoid_rewrite bind_trigger.
+  intros. unfold exists_spec. setoid_rewrite bind_trigger.
   pstep. econstructor. pstep_reverse.
 Qed.
 
 Opaque assert_spec.
 
 (*maybe there is a simpler way to derive this proof from the previous one*)
-Lemma padded_spec_exists_elim {E1 E2} S1 R2 S2 RPre RPost RR (phi : itree_spec E1 S1)
+Lemma padded_exists_spec_elim {E1 E2} S1 R2 S2 RPre RPost RR (phi : itree_spec E1 S1)
       (kphi : R2 -> itree_spec E2 S2) r :
   padded_refines RPre RPost RR phi (kphi r) ->
-  padded_refines RPre RPost RR phi (ITree.bind (spec_exists R2) kphi).
+  padded_refines RPre RPost RR phi (ITree.bind (exists_spec R2) kphi).
 Proof.
   intros.  unfold padded_refines in *. rewrite pad_bind. setoid_rewrite pad_vis.
   rewrite bind_vis.
@@ -166,10 +166,10 @@ Proof.
   pstep. econstructor. Unshelve. all : auto. constructor. pstep_reverse.
 Qed.
 
-Lemma padded_spec_exists_eliml {E1 E2} S1 R2 S2 RPre RPost RR (phi : itree_spec E1 S1)
+Lemma padded_exists_spec_eliml {E1 E2} S1 R2 S2 RPre RPost RR (phi : itree_spec E1 S1)
       (kphi : R2 -> itree_spec E2 S2) :
   (forall r, padded_refines RPre RPost RR (kphi r) phi) ->
-  padded_refines RPre RPost RR (ITree.bind (spec_exists R2) kphi) phi .
+  padded_refines RPre RPost RR (ITree.bind (exists_spec R2) kphi) phi .
 Proof.
   intros.  unfold padded_refines in *. rewrite pad_bind. setoid_rewrite pad_vis.
   rewrite bind_vis.
@@ -177,33 +177,33 @@ Proof.
   pstep. econstructor. intros. constructor. pstep_reverse. apply H.
 Qed.
 
-Ltac existssr a := apply padded_spec_exists_elim with (r := a).
+Ltac existssr a := apply padded_exists_spec_elim with (r := a).
 
-Ltac eexistssr := eapply padded_spec_exists_elim.
+Ltac eexistssr := eapply padded_exists_spec_elim.
 
-Ltac existssl := apply padded_spec_exists_eliml.
+Ltac existssl := apply padded_exists_spec_eliml.
 
 Ltac assumesr := apply padded_assume_pad_elim.
 Ltac assumesl := apply padded_assume_pad_eliml.
 Ltac assertsr := apply padded_assert_pad_elim.
 Ltac assertsl := apply padded_assert_pad_eliml.
 
-Definition spec_forall {E} (T : Type) : itree_spec E T :=
+Definition forall_spec {E} (T : Type) : itree_spec E T :=
   trigger (@Spec_forall E T).
 
-Lemma spec_forall_elim {E1 E2} S1 R2 S2 RPre RPost RR (phi : itree_spec E1 S1)
+Lemma forall_spec_elim {E1 E2} S1 R2 S2 RPre RPost RR (phi : itree_spec E1 S1)
       (kphi : R2 -> itree_spec E2 S2) :
   (forall r, refines RPre RPost RR phi (kphi r)) ->
-  refines RPre RPost RR phi (ITree.bind (spec_forall R2) kphi).
+  refines RPre RPost RR phi (ITree.bind (forall_spec R2) kphi).
 Proof.
-  intros. unfold spec_forall. rewrite bind_trigger.
+  intros. unfold forall_spec. rewrite bind_trigger.
   pstep. constructor. intros. pstep_reverse. apply H.
 Qed.
 
-Lemma padded_spec_forall_elim {E1 E2} S1 R2 S2 RPre RPost RR (phi : itree_spec E1 S1)
+Lemma padded_forall_spec_elim {E1 E2} S1 R2 S2 RPre RPost RR (phi : itree_spec E1 S1)
       (kphi : R2 -> itree_spec E2 S2):
   (forall r, padded_refines RPre RPost RR phi (kphi r)) ->
-  padded_refines RPre RPost RR phi (ITree.bind (spec_forall R2) kphi).
+  padded_refines RPre RPost RR phi (ITree.bind (forall_spec R2) kphi).
 Proof.
   intros.  unfold padded_refines in *. rewrite pad_bind. setoid_rewrite pad_vis.
   rewrite bind_vis.
@@ -212,10 +212,10 @@ Proof.
   apply H.
 Qed.
 
-Lemma padded_spec_forall_eliml {E1 E2} S1 R2 S2 RPre RPost RR (phi : itree_spec E1 S1)
+Lemma padded_forall_spec_eliml {E1 E2} S1 R2 S2 RPre RPost RR (phi : itree_spec E1 S1)
       (kphi : R2 -> itree_spec E2 S2) r:
   padded_refines RPre RPost RR (kphi r) phi ->
-  padded_refines RPre RPost RR (ITree.bind (spec_forall R2) kphi) phi.
+  padded_refines RPre RPost RR (ITree.bind (forall_spec R2) kphi) phi.
 Proof.
   intros.  unfold padded_refines in *. rewrite pad_bind. setoid_rewrite pad_vis.
   rewrite bind_vis.
@@ -226,8 +226,8 @@ Qed.
 
 
 Definition halve_spec {E} (l : list nat) : itree_spec E (list nat * list nat) :=
-  l1 <- spec_exists (list nat);;
-  l2 <- spec_exists (list nat);;
+  l1 <- exists_spec (list nat);;
+  l2 <- exists_spec (list nat);;
   assert_spec (Permutation l (l1 ++ l2));;
   assert_spec (length l1 >= length l2 /\ (length l > length l1 \/ length l <= 1));;
   Ret (l1, l2).
@@ -246,14 +246,14 @@ Definition merge {E} : (list nat * list nat) -> itree_spec E (list nat) :=
               | (nil, l2) => Ret l2 end ).
 
 Definition merge_spec1 {E} l1 l2 : itree_spec E (list nat) :=
-  l <- spec_exists (list nat);;
+  l <- exists_spec (list nat);;
   assert_spec (Permutation l (l1 ++ l2));;
   Ret l.
 
 Definition merge_spec2 {E} l1 l2 : itree_spec E (list nat) :=
   assume_spec (sorted l1);;
   assume_spec (sorted l2);;
-  l <- spec_exists (list nat);;
+  l <- exists_spec (list nat);;
   assert_spec (sorted l);;
   Ret l.
 
@@ -263,7 +263,7 @@ Definition merge_spec {E} l1 l2 : itree_spec E (list nat) :=
 Definition merge_spec' {E} l1 l2 : itree_spec E (list nat) :=
   assume_spec (sorted l1);;
   assume_spec (sorted l2);;
-  l <- spec_exists (list nat);;
+  l <- exists_spec (list nat);;
   assert_spec (sorted l);;
   assert_spec (Permutation l (l1 ++ l2));;
   Ret l.
@@ -281,7 +281,7 @@ Definition sort {E} : list nat -> itree_spec E (list nat) :=
           ).
 
 Definition sort_spec {E} (l : list nat) : itree_spec E (list nat) :=
-  l' <- spec_exists (list nat);;
+  l' <- exists_spec (list nat);;
   assert_spec (Permutation l l');;
   assert_spec (sorted l');;
   Ret l'.
@@ -525,15 +525,15 @@ Section strong_list_ind.
 End strong_list_ind.
 
 
-Lemma interp_mrec_spec_exists E D T (ctx : forall T, D T -> itree_spec (D +' E) T) :
-  interp_mrec_spec ctx (spec_exists T) ≈ spec_exists T.
+Lemma interp_mrec_exists_spec E D T (ctx : forall T, D T -> itree_spec (D +' E) T) :
+  interp_mrec_spec ctx (exists_spec T) ≈ exists_spec T.
 Proof.
   setoid_rewrite interp_mrec_spec'_exists.
   cbn. apply eqit_Vis. intros.  pstep. red. cbn. constructor. auto.
 Qed.
 
-Lemma interp_mrec_spec_forall E D T (ctx : forall T, D T -> itree_spec (D +' E) T) :
-  interp_mrec_spec ctx (spec_forall T) ≈ spec_forall T.
+Lemma interp_mrec_forall_spec E D T (ctx : forall T, D T -> itree_spec (D +' E) T) :
+  interp_mrec_spec ctx (forall_spec T) ≈ forall_spec T.
 Proof.
   setoid_rewrite interp_mrec_spec'_forall.
   cbn. apply eqit_Vis. intros.  pstep. red. cbn. constructor. auto.
@@ -565,8 +565,8 @@ Ltac normalize_interp_mrec_spec :=
   match goal with
   | |- context [ITree.bind (ITree.bind ?t ?k1) ?k2 ] => setoid_rewrite bind_bind
   | |- context [interp_mrec_spec ?ctx (ITree.bind ?t ?k) ] => setoid_rewrite interp_mrec_spec_bind
-  | |- context [interp_mrec_spec ?ctx (spec_exists ?T) ] => setoid_rewrite interp_mrec_spec_exists
-  | |- context [interp_mrec_spec ?ctx (spec_forall ?T) ] => setoid_rewrite interp_mrec_spec_forall
+  | |- context [interp_mrec_spec ?ctx (exists_spec ?T) ] => setoid_rewrite interp_mrec_exists_spec
+  | |- context [interp_mrec_spec ?ctx (forall_spec ?T) ] => setoid_rewrite interp_mrec_forall_spec
   | |- context [interp_mrec_spec ?ctx (assert_spec ?T) ] => setoid_rewrite interp_mrec_spec_assert
   | |- context [interp_mrec_spec ?ctx (assume_spec ?T) ] => setoid_rewrite interp_mrec_spec_assume
   end.

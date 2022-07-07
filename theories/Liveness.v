@@ -31,7 +31,7 @@ Definition server_impl {E} `{errorE -< E} `{serverE -< E} : unit -> itree_spec E
 Definition server_spec {E} `{errorE -< E} `{serverE -< E} : unit -> itree_spec E void :=
   rec_fix_spec (fun rec _ =>
                   l <- trigger rcvE;;
-                  ls <- spec_exists (list nat);;
+                  ls <- exists_spec (list nat);;
                   assert_spec (Permutation l ls);;
                   assert_spec (sorted ls);;
                   trigger (sendE ls);;

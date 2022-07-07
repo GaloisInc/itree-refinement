@@ -68,8 +68,8 @@ Proof. reflexivity. Qed.
 
 Definition halve_spec_fix {E} : list nat -> itree_spec E (list nat * list nat) :=
   rec_fix_spec (fun halve_spec_rec l =>
-                  n <- spec_exists nat;;
-                  trepeat n ( l' <- spec_exists (list nat);; halve_spec_rec l' );;
+                  n <- exists_spec nat;;
+                  trepeat n ( l' <- exists_spec (list nat);; halve_spec_rec l' );;
                   halve_spec l
                ).
 
@@ -198,8 +198,8 @@ Proof.
   - right. pstep. auto.
 Qed.
 
-Lemma conv_ref_spec_exists E R :
-  @conv_ref E R (spec_exists R).
+Lemma conv_ref_exists_spec E R :
+  @conv_ref E R (exists_spec R).
 Proof.
   pstep. red. cbn. constructor.
   intros. left. pstep. constructor.
@@ -221,7 +221,7 @@ Section SpecFix.
 
   Definition total_spec (a : A) : itree_spec E B :=
     assume_spec (Pre a);;
-    b <- spec_exists B;;
+    b <- exists_spec B;;
     assert_spec (Post a b);;
     Ret b.
 
@@ -235,10 +235,10 @@ Section SpecFix.
     rec_fix_spec (fun rec a =>
                     assume_spec (Pre a);;
                     (
-                      n <- spec_exists nat;;
-                      trepeat n (a' <- spec_exists A;; assert_spec (Pre a');; rec a')
+                      n <- exists_spec nat;;
+                      trepeat n (a' <- exists_spec A;; assert_spec (Pre a');; rec a')
                     );;
-                    b <- spec_exists B;;
+                    b <- exists_spec B;;
                     assert_spec (Post a b);;
                     Ret b
                  ).
@@ -247,11 +247,11 @@ Section SpecFix.
     rec_fix_spec (fun rec a =>
                         assume_spec (Pre a);;
                         (
-                          n <- spec_exists nat;;
-                          trepeat n (a' <- spec_exists A;; assert_spec (Pre a');; rec a')
+                          n <- exists_spec nat;;
+                          trepeat n (a' <- exists_spec A;; assert_spec (Pre a');; rec a')
                         );;
                         or_spec (
-                            b <- spec_exists B;;
+                            b <- exists_spec B;;
                             assert_spec (Post a b);;
                             Ret b)
                         ITree.spin
@@ -262,10 +262,10 @@ Section SpecFix.
     rec_fix_spec (fun rec a =>
                     assume_spec (Pre a);;
                     (
-                      n <- spec_exists nat;;
-                      trepeat n (a' <- spec_exists A;; assert_spec (Pre a' /\ Rdec a' a);; rec a')
+                      n <- exists_spec nat;;
+                      trepeat n (a' <- exists_spec A;; assert_spec (Pre a' /\ Rdec a' a);; rec a')
                     );;
-                    b <- spec_exists B;;
+                    b <- exists_spec B;;
                     assert_spec (Post a b);;
                     Ret b
                  ).
@@ -283,15 +283,15 @@ Section SpecFix.
     match goal with |- context [ interp_mrec_spec ?k _ ] => set k as body end.
     unfold total_spec. assumesr. intros Ha. setoid_rewrite interp_mrec_spec_assume.
     assumesl. auto. rewrite bind_bind.  setoid_rewrite interp_mrec_spec_bind.
-    setoid_rewrite interp_mrec_spec_exists. existssl. intros n.
+    setoid_rewrite interp_mrec_exists_spec. existssl. intros n.
     induction n.
     - simpl. rewrite bind_ret_l. setoid_rewrite interp_mrec_spec_bind.
-      setoid_rewrite interp_mrec_spec_exists.
+      setoid_rewrite interp_mrec_exists_spec.
       setoid_rewrite interp_mrec_spec_bind. setoid_rewrite interp_mrec_spec_assert.
       setoid_rewrite interp_mrec_spec_ret. reflexivity.
     - simpl. rewrite bind_bind. setoid_rewrite interp_mrec_spec_bind.
       setoid_rewrite IHn. setoid_rewrite interp_mrec_spec_bind.
-      setoid_rewrite interp_mrec_spec_exists. rewrite bind_bind. existssl.
+      setoid_rewrite interp_mrec_exists_spec. rewrite bind_bind. existssl.
       intros a'. setoid_rewrite interp_mrec_spec_bind.
       setoid_rewrite interp_mrec_spec_assert. rewrite bind_bind. assertsl.
       intros [Hprea' Hdec]. simpl.
@@ -366,7 +366,7 @@ Section SpecFix.
     match goal with | |- context [ interp_mrec_spec ?f _ ] => set f as body end.
     intro Hfix.
     assert (
-        padded_refines_eq eq (interp_mrec_spec body (or_spec (b <- spec_exists B;; _ <- assert_spec (Post a b);; Ret b) ITree.spin)) (partial_spec a)).
+        padded_refines_eq eq (interp_mrec_spec body (or_spec (b <- exists_spec B;; _ <- assert_spec (Post a b);; Ret b) ITree.spin)) (partial_spec a)).
     {
       rewrite interp_mrec_spec_or. unfold partial_spec.
       apply or_spec_l.
@@ -386,8 +386,8 @@ Section SpecFix.
     assert (t1 ≈ (interp_mrec_spec body (trigger (@Spec_forall _ (Pre a))) >>
                  Ret tt >>
                   (interp_mrec_spec body
-           (ITree.bind (spec_exists nat)
-              (fun n : nat => trepeat n (ITree.bind (spec_exists A) (fun a' : A =>
+           (ITree.bind (exists_spec nat)
+              (fun n : nat => trepeat n (ITree.bind (exists_spec A) (fun a' : A =>
                        trigger (@Spec_exists _ (Pre a')) >> Ret tt >> call_spec a'))))) >> partial_spec a)
                  ).
     {
@@ -461,8 +461,8 @@ Section SpecFix.
     do 2 setoid_rewrite interp_mrec_spec_bind in Hfix. revert Hfix.
     match goal with | |- context [ interp_mrec_spec ?f _ ] => set f as body end.
     intro Hfix.
-    assert (interp_mrec_spec body (b <- spec_exists B;; _ <- assert_spec (Post a b);; Ret b) ≈
-                             (b <- spec_exists B;; _ <- assert_spec (Post a b);; Ret b)).
+    assert (interp_mrec_spec body (b <- exists_spec B;; _ <- assert_spec (Post a b);; Ret b) ≈
+                             (b <- exists_spec B;; _ <- assert_spec (Post a b);; Ret b)).
     {
       repeat setoid_rewrite interp_mrec_spec_bind.
       normalize_interp_mrec_spec.
@@ -561,7 +561,7 @@ Section SpecFix.
     setoid_rewrite interp_mrec_spec_bind.
     normalize_interp_mrec_spec.
     match goal with |- context [ interp_mrec_spec ?body_ _  ] => set body_ as body end.
-    setoid_rewrite interp_mrec_spec_exists. existssr 0. cbn.
+    setoid_rewrite interp_mrec_exists_spec. existssr 0. cbn.
     rewrite interp_mrec_spec_ret, bind_ret_l. rewrite interp_mrec_spec_or.
     apply or_spec_r. right. rewrite interp_mrec_spec_spin. reflexivity.
   Qed.
@@ -571,8 +571,8 @@ End SpecFix.
 
 Opaque assume_spec.
 Opaque assert_spec.
-Opaque spec_forall.
-Opaque spec_exists.
+Opaque forall_spec.
+Opaque exists_spec.
 
 Lemma halve_spec_fix_correct' E l :
   padded_refines_eq eq (@halve E l) (partial_spec_fix (fun _ => True)

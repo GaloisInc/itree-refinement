@@ -36,7 +36,7 @@ Lemma padded_refines_exists_r E1 E2 R1 R2 A
   padded_refines RPre RPost RR phi (Vis Spec_exists kphi).
 Proof.
   setoid_rewrite <- bind_trigger.
-  apply padded_spec_exists_elim.
+  apply padded_exists_spec_elim.
 Qed.
 Lemma padded_refines_exists_l E1 E2 R1 R2 A
       RPre RPost RR (phi : itree_spec E2 R2) (kphi : A -> itree_spec E1 R1) :
@@ -44,7 +44,7 @@ Lemma padded_refines_exists_l E1 E2 R1 R2 A
   padded_refines RPre RPost RR (Vis Spec_exists kphi) phi.
 Proof.
   setoid_rewrite <- bind_trigger.
-  apply padded_spec_exists_eliml.
+  apply padded_exists_spec_eliml.
 Qed.
 
 Lemma padded_refines_forall_r E1 E2 R1 R2 A
@@ -53,7 +53,7 @@ Lemma padded_refines_forall_r E1 E2 R1 R2 A
   padded_refines RPre RPost RR phi (Vis Spec_forall kphi).
 Proof.
   setoid_rewrite <- bind_trigger.
-  apply padded_spec_forall_elim.
+  apply padded_forall_spec_elim.
 Qed.
 Lemma padded_refines_forall_l E1 E2 R1 R2 A
       RPre RPost RR (phi : itree_spec E2 R2) (kphi : A -> itree_spec E1 R1) a :
@@ -61,7 +61,7 @@ Lemma padded_refines_forall_l E1 E2 R1 R2 A
   padded_refines RPre RPost RR (Vis Spec_forall kphi) phi.
 Proof.
   setoid_rewrite <- bind_trigger.
-  apply padded_spec_forall_eliml.
+  apply padded_forall_spec_eliml.
 Qed.
 
 Lemma padded_refines_if_r E1 E2 RPre RPost R1 R2 RR (t1 : itree_spec E1 R1) (t2 t3: itree_spec E2 R2) b :
@@ -280,10 +280,10 @@ Context (rdec : A2 -> A2 -> Prop).
 Definition total_spec_fix_body (a : A2) : itree_spec (callE A2 R2 +' E2) R2 :=
   assume_spec (Pre a);;
   (
-    n <- spec_exists nat;;
-    trepeat n (a' <- spec_exists A2;; assert_spec (Pre a' /\ rdec a' a);; call_spec a')
+    n <- exists_spec nat;;
+    trepeat n (a' <- exists_spec A2;; assert_spec (Pre a' /\ rdec a' a);; call_spec a')
   );;
-  b <- spec_exists R2;;
+  b <- exists_spec R2;;
   assert_spec (Post a b);;
   Ret b.
 
@@ -791,24 +791,24 @@ Hint Extern 101 (padded_refines _ _ _ _ (assume_spec _ >>= _)) =>
 Hint Extern 101 (padded_refines _ _ _ (assume_spec _ >>= _) _) =>
   apply padded_refines_bind_bind_l : refines.
 
-(* spec_exists _ := trigger _ *)
-Hint Extern 101 (padded_refines _ _ _ _ (spec_exists _)) =>
+(* exists_spec _ := trigger _ *)
+Hint Extern 101 (padded_refines _ _ _ _ (exists_spec _)) =>
   apply padded_refines_trigger_r : refines.
-Hint Extern 101 (padded_refines _ _ _ (spec_exists _) _) =>
+Hint Extern 101 (padded_refines _ _ _ (exists_spec _) _) =>
   apply padded_refines_trigger_l : refines.
-Hint Extern 101 (padded_refines _ _ _ _ (spec_exists _ >>= _)) =>
+Hint Extern 101 (padded_refines _ _ _ _ (exists_spec _ >>= _)) =>
   apply padded_refines_trigger_bind_r : refines.
-Hint Extern 101 (padded_refines _ _ _ (spec_exists _ >>= _) _) =>
+Hint Extern 101 (padded_refines _ _ _ (exists_spec _ >>= _) _) =>
   apply padded_refines_trigger_bind_l : refines.
 
-(* spec_forall _ := trigger _ *)
-Hint Extern 101 (padded_refines _ _ _ _ (spec_forall _)) =>
+(* forall_spec _ := trigger _ *)
+Hint Extern 101 (padded_refines _ _ _ _ (forall_spec _)) =>
   apply padded_refines_trigger_r : refines.
-Hint Extern 101 (padded_refines _ _ _ (spec_forall _) _) =>
+Hint Extern 101 (padded_refines _ _ _ (forall_spec _) _) =>
   apply padded_refines_trigger_l : refines.
-Hint Extern 101 (padded_refines _ _ _ _ (spec_forall _ >>= _)) =>
+Hint Extern 101 (padded_refines _ _ _ _ (forall_spec _ >>= _)) =>
   apply padded_refines_trigger_bind_r : refines.
-Hint Extern 101 (padded_refines _ _ _ (spec_forall _ >>= _) _) =>
+Hint Extern 101 (padded_refines _ _ _ (forall_spec _ >>= _) _) =>
   apply padded_refines_trigger_bind_l : refines.
 
 
@@ -967,7 +967,7 @@ Qed.
 Lemma test_exists E (x : Z) :
   @padded_refines E E Z Z eqPreRel eqPostRel eq
                   (if x >=? 0 then Ret x else Ret (-1 * x))
-                  (r <- spec_exists Z ;; Ret r).
+                  (r <- exists_spec Z ;; Ret r).
 Proof.
   prove_refinement.
 Qed.
