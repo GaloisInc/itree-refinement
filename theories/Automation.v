@@ -237,13 +237,13 @@ Context (RPre : PreRel E1 E2) (RPost : PostRel E1 E2) (RR : R1 -> R2 -> Prop).
 Context (precond : A1 -> A2 -> Prop)
         (postcond : forall a1 a2, precond a1 a2 -> forall r1 r2, RR r1 r2 -> Prop).
 
-Variant padded_refines_rec_RPreInv : PreRel (callE A1 R1) (callE A2 R2) :=
-  | padded_refines_rec_RPreInv_i a1 a2 : precond a1 a2 ->
-    padded_refines_rec_RPreInv R1 R2 (Call a1) (Call a2).
+Variant OnCallPreRel : PreRel (callE A1 R1) (callE A2 R2) :=
+  | OnCallPreRel_i a1 a2 : precond a1 a2 ->
+    OnCallPreRel R1 R2 (Call a1) (Call a2).
 
-Variant padded_refines_rec_RPostInv : PostRel (callE A1 R1) (callE A2 R2) :=
-  | padded_refines_rec_RPostInv_i a1 a2 r1 r2 p : depProdRel RR (postcond a1 a2 p) r1 r2 ->
-    padded_refines_rec_RPostInv R1 R2 (Call a1) (Call a2) r1 r2.
+Variant OnCallPostRel : PostRel (callE A1 R1) (callE A2 R2) :=
+  | OnCallPostRel_i a1 a2 r1 r2 p : depProdRel RR (postcond a1 a2 p) r1 r2 ->
+    OnCallPostRel R1 R2 (Call a1) (Call a2) r1 r2.
 
 Context (body1 : A1 -> itree_spec (callE A1 R1 +' E1) R1).
 
@@ -253,8 +253,8 @@ Context (body2 : A2 -> itree_spec (callE A2 R2 +' E2) R2).
 Lemma padded_refines_rec (a1 : A1) (a2 : A2) :
   precond a1 a2 ->
   (forall a1 a2 (p : precond a1 a2),
-     padded_refines (sumPreRel padded_refines_rec_RPreInv RPre)
-                    (sumPostRel padded_refines_rec_RPostInv RPost)
+     padded_refines (sumPreRel OnCallPreRel RPre)
+                    (sumPostRel OnCallPostRel RPost)
                     (depProdRel RR (postcond a1 a2 p))
                     (body1 a1) (body2 a2)) ->
   padded_refines RPre RPost RR (mrec_spec (calling' body1) (Call a1))
@@ -262,10 +262,10 @@ Lemma padded_refines_rec (a1 : A1) (a2 : A2) :
 Proof.
   intros.
   eapply padded_refines_monot with
-    (RR1 := padded_refines_rec_RPostInv R1 R2 (Call a1) (Call a2)); eauto.
+    (RR1 := OnCallPostRel R1 R2 (Call a1) (Call a2)); eauto.
   { intros. inv PR. destruct H7. inj_existT. subst. auto. }
-  eapply padded_refines_mrec with (RPreInv := padded_refines_rec_RPreInv)
-                                  (RPostInv := padded_refines_rec_RPostInv).
+  eapply padded_refines_mrec with (RPreInv := OnCallPreRel)
+                                  (RPostInv := OnCallPostRel).
   - intros A B [] [] []. unfold calling'.
     eapply padded_refines_monot with (RR1 := depProdRel RR (postcond a3 a4 H1)); eauto.
     intros. econstructor; eauto.
@@ -291,8 +291,8 @@ Lemma padded_refines_total_spec (a1 : A1) (a2 : A2) :
   well_founded rdec ->
   precond a1 a2 ->
   (forall a1 a2 (p : precond a1 a2),
-     padded_refines (sumPreRel padded_refines_rec_RPreInv RPre)
-                    (sumPostRel padded_refines_rec_RPostInv RPost)
+     padded_refines (sumPreRel OnCallPreRel RPre)
+                    (sumPostRel OnCallPostRel RPost)
                     (depProdRel RR (postcond a1 a2 p))
                     (body1 a1) (total_spec_fix_body a2)) ->
   padded_refines RPre RPost RR (mrec_spec (calling' body1) (Call a1))
@@ -424,20 +424,20 @@ Proof.
   erewrite eq_rect_eq; eauto.
 Qed.
 
-Polymorphic Lemma IntroArg_padded_refines_rec_RPreInv_i n A1 A2 R1 R2
+Polymorphic Lemma IntroArg_OnCallPreRel_i n A1 A2 R1 R2
                   (precond : A1 -> A2 -> Prop) a1 a2 (goal : _ -> Prop) :
-  IntroArg n (precond a1 a2) (fun p => goal (padded_refines_rec_RPreInv_i _ _ _ _ _ _ _ p)) ->
-  IntroArg n (padded_refines_rec_RPreInv A1 A2 R1 R2 precond R1 R2 (Call a1) (Call a2)) goal.
+  IntroArg n (precond a1 a2) (fun p => goal (OnCallPreRel_i _ _ _ _ _ _ _ p)) ->
+  IntroArg n (OnCallPreRel A1 A2 R1 R2 precond R1 R2 (Call a1) (Call a2)) goal.
 Proof. intros ?H ?H; dependent destruction H0; apply H. Qed.
 
-Polymorphic Lemma IntroArg_padded_refines_rec_RPostInv_i n A1 A2 R1 R2
+Polymorphic Lemma IntroArg_OnCallPostRel_i n A1 A2 R1 R2
                   (RR : R1 -> R2 -> Prop) (precond : A1 -> A2 -> Prop)
                   (postcond : forall a1 a2, precond a1 a2 -> forall (r1 : R1) (r2 : R2), RR r1 r2 -> Prop)
                   a1 a2 r1 r2 (goal : _ -> Prop) :
   IntroArg n (precond a1 a2) (fun p0 => IntroArg n (RR r1 r2) (fun p1 =>
   IntroArg n (postcond a1 a2 p0 r1 r2 p1) (fun p2 =>
-    goal (padded_refines_rec_RPostInv_i _ _ _ _ _ _ _ _ _ _ _ p0 (exist _ p1 p2))))) ->
-  IntroArg n (padded_refines_rec_RPostInv A1 A2 R1 R2 RR precond postcond R1 R2 (Call a1) (Call a2) r1 r2) goal.
+    goal (OnCallPostRel_i _ _ _ _ _ _ _ _ _ _ _ p0 (exist _ p1 p2))))) ->
+  IntroArg n (OnCallPostRel A1 A2 R1 R2 RR precond postcond R1 R2 (Call a1) (Call a2) r1 r2) goal.
 Proof. intros ?H ?H; dependent destruction H0; dependent destruction d; apply H. Qed.
 
 Ltac IntroArg_intro_dependent_destruction n :=
@@ -481,8 +481,8 @@ Ltac IntroArg_base_tac n A g :=
   | sumPostRel _ _ _ _ (ReSum_inr _ _ _ _ _ _ _) (inl1 _) _ _ => IntroArg_intro_dependent_destruction n
   | sumPostRel _ _ _ _ (ReSum_inr _ _ _ _ _ _ _) (ReSum_inl _ _ _ _ _ _ _) _ _ => IntroArg_intro_dependent_destruction n
   | eqPostRel _ _ _ _ _ _ => apply IntroArg_eqPostRel
-  | padded_refines_rec_RPreInv _ _ _ _ _ _ _ (Call _) (Call _) => simple apply IntroArg_padded_refines_rec_RPreInv_i
-  | padded_refines_rec_RPostInv _ _ _ _ _ _ _ _ _ (Call _) (Call _) _ _ => simple apply IntroArg_padded_refines_rec_RPostInv_i
+  | OnCallPreRel _ _ _ _ _ _ _ (Call _) (Call _) => simple apply IntroArg_OnCallPreRel_i
+  | OnCallPostRel _ _ _ _ _ _ _ _ _ (Call _) (Call _) _ _ => simple apply IntroArg_OnCallPostRel_i
   | true  = true  => IntroArg_intro_dependent_destruction n
   | false = false => IntroArg_intro_dependent_destruction n
   | true  = false => IntroArg_intro_dependent_destruction n
@@ -567,26 +567,26 @@ Hint Extern 101 (RelGoal (sumPostRel _ _ _ _ (ReSum_inr _ _ _ _ _ _ _) (inr1 _) 
 Hint Extern 101 (RelGoal (sumPostRel _ _ _ _ (ReSum_inr _ _ _ _ _ _ _) (ReSum_inr _ _ _ _ _ _ _) _ _)) =>
   apply RelGoal_sumPostRel_inr : refines.
 
-Lemma RelGoal_padded_refines_rec_RPreInv_i A1 A2 R1 R2
+Lemma RelGoal_OnCallPreRel_i A1 A2 R1 R2
       (precond : A1 -> A2 -> Prop)  a1 a2 :
   RelGoal (precond a1 a2) ->
-  RelGoal (padded_refines_rec_RPreInv A1 A2 R1 R2 precond R1 R2 (Call a1) (Call a2)).
+  RelGoal (OnCallPreRel A1 A2 R1 R2 precond R1 R2 (Call a1) (Call a2)).
 Proof. constructor; eauto. Qed.
 
-Hint Extern 101 (RelGoal (padded_refines_rec_RPreInv _ _ _ _ _ _ _ (Call _) (Call _))) =>
-  simple apply RelGoal_padded_refines_rec_RPreInv_i : refines.
+Hint Extern 101 (RelGoal (OnCallPreRel _ _ _ _ _ _ _ (Call _) (Call _))) =>
+  simple apply RelGoal_OnCallPreRel_i : refines.
 
-Lemma RelGoal_padded_refines_rec_RPostInv_i A1 A2 R1 R2
+Lemma RelGoal_OnCallPostRel_i A1 A2 R1 R2
       (RR : R1 -> R2 -> Prop) (precond : A1 -> A2 -> Prop)
       (postcond : forall a1 a2, precond a1 a2 -> forall (r1 : R1) (r2 : R2), RR r1 r2 -> Prop)
       a1 a2 r1 r2 :
   forall (p0 : RelGoal (precond a1 a2)) (p1 : RelGoal (RR r1 r2)),
   RelGoal (postcond a1 a2 p0 r1 r2 p1) ->
-  RelGoal (padded_refines_rec_RPostInv A1 A2 R1 R2 RR precond postcond R1 R2 (Call a1) (Call a2) r1 r2).
+  RelGoal (OnCallPostRel A1 A2 R1 R2 RR precond postcond R1 R2 (Call a1) (Call a2) r1 r2).
 Proof. econstructor; econstructor; eauto. Qed.
 
-Hint Extern 101 (RelGoal (padded_refines_rec_RPostInv _ _ _ _ _ _ _ _ _ (Call _) (Call _) _ _)) =>
-  simple apply RelGoal_padded_refines_rec_RPostInv_i : refines.
+Hint Extern 101 (RelGoal (OnCallPostRel _ _ _ _ _ _ _ _ _ (Call _) (Call _) _ _)) =>
+  simple apply RelGoal_OnCallPostRel_i : refines.
 
 Lemma RelGoal_depProdRel {R1 R2} (RR1 : R1 -> R2 -> Prop) (RR2 : forall r1 r2, RR1 r1 r2 -> Prop) r1 r2 :
   forall (p1 : RelGoal (RR1 r1 r2)), RelGoal (RR2 r1 r2 p1) ->
