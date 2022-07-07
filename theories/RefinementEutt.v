@@ -36,7 +36,7 @@ Proof.
   - constructor. inv H1. pclearbot. punfold H3.
 Qed.
 
-Lemma refines_eutt_padded_r E1 E2 R1 R2 RE REAns RR : 
+Lemma refines_eutt_padded_r E1 E2 R1 R2 RE REAns RR :
   forall (t1 : itree_spec E1 R1) (t2 t3 : itree_spec E2 R2),
     padded t1 -> padded t2 -> padded t3 -> t2 ≈ t3 ->
     refines RE REAns RR t1 t2 -> refines RE REAns RR t1 t3.

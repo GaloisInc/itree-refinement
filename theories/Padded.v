@@ -12,7 +12,7 @@ Variant paddedF {E R} (F : itree E R -> Prop) : itree' E R -> Prop :=
   | paddedF_Ret r : paddedF F (RetF r)
   | paddedF_Tau t : F t -> paddedF F (TauF t)
   | paddedF_VisTau A e (k : A -> itree E R) :
-    (forall a, F (k a)) -> paddedF F (VisF e (fun a => (Tau (k a ))))
+    (forall a, F (k a)) -> paddedF F (VisF e (fun a => (Tau (k a))))
 .
 
 Definition padded_ {E R} F (t : itree E R) := paddedF F (observe t).
@@ -38,8 +38,8 @@ Proof.
   intros. pstep. red. cbn. constructor. left. apply H.
 Qed.
 
-Lemma padded_Vis_inv E R A (e : E A) (k : A -> itree E R) : 
-  padded (Vis e k ) -> exists k', forall a, k a ≅ Tau (k' a).
+Lemma padded_Vis_inv E R A (e : E A) (k : A -> itree E R) :
+  padded (Vis e k) -> exists k', forall a, k a ≅ Tau (k' a).
 Proof.
   intro Hek. pinversion Hek. inj_existT. subst. exists k1. reflexivity.
 Qed.
@@ -47,7 +47,7 @@ Qed.
 CoFixpoint pad_ {E R} (ot : itree' E R) : itree E R :=
   match ot with
   | RetF r => Ret r
-  | TauF t => Tau (pad_ (observe t) )
+  | TauF t => Tau (pad_ (observe t))
   | VisF e k => Vis e (fun a => Tau (pad_ (observe (k a))))
   end.
 
@@ -69,7 +69,7 @@ Proof.
   destruct (observe t); cbn.
   - constructor. auto.
   - constructor. right. eauto.
-  - constructor. left. 
+  - constructor. left.
     generalize (k v) as t'.
     pcofix CIH'. intros. pstep. constructor; auto.
     destruct (observe t'); cbn.
@@ -101,14 +101,14 @@ Proof.
   enough (pad t ≅ pad t). auto. reflexivity.
 Qed.
 
-Theorem pad_vis E R A e (k : A -> itree E R) : 
+Theorem pad_vis E R A e (k : A -> itree E R) :
   pad (Vis e k) ≅ Vis e (fun a => Tau (pad (k a))).
 Proof.
   intros. pstep. red. cbn. constructor. left.
-  enough (Tau (pad (k v)) ≅ Tau (pad (k v)) ). auto. reflexivity.
+  enough (Tau (pad (k v)) ≅ Tau (pad (k v))). auto. reflexivity.
 Qed.
- 
-Theorem pad_bind E R S (k : R -> itree E S) : 
+
+Theorem pad_bind E R S (k : R -> itree E S) :
   forall t, pad (ITree.bind t k) ≅ ITree.bind (pad t) (fun r => pad (k r)).
 Proof.
   ginit. gcofix CIH. intros. destruct (observe t) eqn : Heq; symmetry in Heq; apply simpobs in Heq;

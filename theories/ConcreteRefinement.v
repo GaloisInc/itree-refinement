@@ -49,7 +49,7 @@ Proof.
   - constructor. left. pstep. eapply IHHt; eauto.
   - inv Hcon. pclearbot. eapply IHHt; auto. pstep_reverse.
 Qed.
-(*should it be refines or padded refines? lifting to padded_refines is actually simple 
+(*should it be refines or padded refines? lifting to padded_refines is actually simple
    because each other predicate respects eutt *)
 Theorem concrete_conv_ref_to_no_ev E1 E2 R1 R2 RE REAns RR :
   forall (t : itree_spec E1 R1) (phi : itree_spec E2 R2), isConcrete t -> conv_ref phi ->
@@ -99,11 +99,11 @@ Proof.
     auto.
 Qed.
 (*relies on lem*)
-Theorem no_ev_to_dec E R : forall (t : itree E R), no_events t -> 
+Theorem no_ev_to_dec E R : forall (t : itree E R), no_events t ->
                                               (exists r, t ≈ Ret r) \/ t ≈ ITree.spin.
 Proof.
-  intros. 
-  destruct (Axioms.classic (exists r, t ≈ Ret r) ); eauto.
+  intros.
+  destruct (Axioms.classic (exists r, t ≈ Ret r)); eauto.
   right.
   apply no_ev_no_ret_to_spin; auto.
   intros r Hr. apply H0. exists r. auto.

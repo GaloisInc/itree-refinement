@@ -24,7 +24,7 @@ Lemma padded_refines_vis E1 E2 R1 R2 A B
         RE REAns RR (e1 : E1 A) (e2 : E2 B)
         (k1 : A -> itree_spec E1 R1) (k2 : B -> itree_spec E2 R2) :
   (RE A B e1 e2 : Prop) ->
-  (forall a b, (REAns A B e1 e2 a b : Prop) -> padded_refines RE REAns RR (k1 a) (k2 b) ) ->
+  (forall a b, (REAns A B e1 e2 a b : Prop) -> padded_refines RE REAns RR (k1 a) (k2 b)) ->
   padded_refines RE REAns RR (Vis (Spec_vis e1) k1) (Vis (Spec_vis e2) k2).
 Proof.
   apply padded_refines_vis.
@@ -281,7 +281,7 @@ Definition total_spec_fix_body (a : A2) : itree_spec (callE A2 R2 +' E2) R2 :=
   assume_spec (Pre a);;
   (
     n <- spec_exists nat;;
-    trepeat n (a' <- spec_exists A2;; assert_spec (Pre a' /\ rdec a' a);; call_spec a' )
+    trepeat n (a' <- spec_exists A2;; assert_spec (Pre a' /\ rdec a' a);; call_spec a')
   );;
   b <- spec_exists R2;;
   assert_spec (Post a b);;
@@ -906,13 +906,13 @@ Hint Extern 101 (padded_refines _ _ _ _ (call_spec _ >>= _)) =>
 Hint Extern 101 (padded_refines _ _ _ (call_spec _ >>= _) _) =>
   apply padded_refines_trigger_bind_l : refines.
 
-Hint Extern 991 (padded_refines _ _ _ (Vis (Spec_vis (inl1 (Call _) )) _) (trepeat _ _)) =>
+Hint Extern 991 (padded_refines _ _ _ (Vis (Spec_vis (inl1 (Call _))) _) (trepeat _ _)) =>
   simple apply padded_refines_trepeat_suc_r : refines.
-Hint Extern 991 (padded_refines _ _ _ (vis (Spec_vis (inl1 (Call _) )) _) (trepeat _ _)) =>
+Hint Extern 991 (padded_refines _ _ _ (vis (Spec_vis (inl1 (Call _))) _) (trepeat _ _)) =>
   simple apply padded_refines_trepeat_suc_r : refines.
-Hint Extern 991 (padded_refines _ _ _ (Vis (Spec_vis (inl1 (Call _) )) _) (trepeat _ _ >>= _)) =>
+Hint Extern 991 (padded_refines _ _ _ (Vis (Spec_vis (inl1 (Call _))) _) (trepeat _ _ >>= _)) =>
   simple apply padded_refines_trepeat_bind_suc_r : refines.
-Hint Extern 991 (padded_refines _ _ _ (vis (Spec_vis (inl1 (Call _) )) _) (trepeat _ _ >>= _)) =>
+Hint Extern 991 (padded_refines _ _ _ (vis (Spec_vis (inl1 (Call _))) _) (trepeat _ _ >>= _)) =>
   simple apply padded_refines_trepeat_bind_suc_r : refines.
 
 Hint Extern 992 (padded_refines _ _ _ _ (trepeat _ _)) =>

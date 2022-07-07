@@ -23,8 +23,8 @@ Locate "-<".
 
 (*need stuff for injection *)
 
-Global Instance ResumSpecEvent {E1 E2} : E1 -< E2 -> E1 -< SpecEvent E2 := 
-  fun s _ e => Spec_vis (s _ e). 
+Global Instance ResumSpecEvent {E1 E2} : E1 -< E2 -> E1 -< SpecEvent E2 :=
+  fun s _ e => Spec_vis (s _ e).
 
 Definition is_nil {E} `{errorE -< E} (l : list nat) : itree_spec E bool :=
   match l with
@@ -35,7 +35,7 @@ Definition is_nil {E} `{errorE -< E} (l : list nat) : itree_spec E bool :=
 Definition head {E} `{errorE -< E} (l : list nat) : itree_spec E nat :=
   match l with
   | nil => trigger throw ;; Ret 0
-  | n :: _ => Ret n 
+  | n :: _ => Ret n
   end.
 
 Definition tail {E} `{errorE -< E} (l : list nat) : itree_spec E (list nat) :=
@@ -108,7 +108,7 @@ Definition sort {E : Type -> Type} `{errorE -< E} : list nat -> itree_spec E (li
 (** * Halve *)
 
 Definition halve_pre (l : list nat) : Prop := True.
-Definition halve_post (l : list nat) ( p : list nat * list nat) :=
+Definition halve_post (l : list nat) (p : list nat * list nat) :=
   let '(l1,l2) := p in
   Permutation l (l1 ++ l2) /\
     (length l1 >= length l2 /\ (length l > length l1 \/ 1 >= length l)).
