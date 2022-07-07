@@ -51,9 +51,9 @@ Proof.
 Qed.
 (*should it be refines or padded refines? lifting to padded_refines is actually simple
    because each other predicate respects eutt *)
-Theorem concrete_conv_ref_to_no_ev E1 E2 R1 R2 RE REAns RR :
+Theorem concrete_conv_ref_to_no_ev E1 E2 R1 R2 RPre RPost RR :
   forall (t : itree_spec E1 R1) (phi : itree_spec E2 R2), isConcrete t -> conv_ref phi ->
-                                                     refines RE REAns RR t phi ->
+                                                     refines RPre RPost RR t phi ->
                                                      no_events t.
 Proof.
   pcofix CIH.
@@ -76,9 +76,9 @@ Proof.
     Unshelve. auto.
 Qed.
 
-Theorem concrete_conv_ref_padded_to_no_ev E1 E2 R1 R2 RE REAns RR :
+Theorem concrete_conv_ref_padded_to_no_ev E1 E2 R1 R2 RPre RPost RR :
   forall (t : itree_spec E1 R1) (phi : itree_spec E2 R2), isConcrete t -> conv_ref phi ->
-                                                     padded_refines RE REAns RR t phi ->
+                                                     padded_refines RPre RPost RR t phi ->
                                                      no_events t.
 Proof.
   intros t phi Hcon Hconv Href. red in Href. rewrite  pad_eutt.

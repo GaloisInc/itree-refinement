@@ -86,10 +86,10 @@ Definition halve {E} : list nat -> itree_spec E (list nat * list nat) :=
 Definition assert_spec {E} (P : Type) : itree_spec E unit :=
   trigger (@Spec_exists E P);; Ret tt.
 
-Lemma padded_assert_pad_elim {E1 E2} RE REAns R1 R2 RR P
+Lemma padded_assert_pad_elim {E1 E2} RPre RPost R1 R2 RR P
       (phi : itree_spec E1 R1) (kphi : unit -> itree_spec E2 R2) :
-  P -> padded_refines RE REAns RR phi (kphi tt) ->
-  padded_refines RE REAns RR phi (ITree.bind (assert_spec P) kphi).
+  P -> padded_refines RPre RPost RR phi (kphi tt) ->
+  padded_refines RPre RPost RR phi (ITree.bind (assert_spec P) kphi).
 Proof.
   intros. setoid_rewrite bind_trigger.
   unfold padded_refines in *. rewrite pad_bind, pad_vis.
@@ -97,10 +97,10 @@ Proof.
   setoid_rewrite bind_ret_l. pstep. constructor. auto. constructor. pstep_reverse.
 Qed.
 
-Lemma padded_assert_pad_eliml {E1 E2} RE REAns R1 R2 RR P
+Lemma padded_assert_pad_eliml {E1 E2} RPre RPost R1 R2 RR P
       (phi : itree_spec E1 R1) (kphi : unit -> itree_spec E2 R2) :
-  (P -> padded_refines RE REAns RR (kphi tt) phi) ->
-  padded_refines RE REAns RR (ITree.bind (assert_spec P) kphi) phi.
+  (P -> padded_refines RPre RPost RR (kphi tt) phi) ->
+  padded_refines RPre RPost RR (ITree.bind (assert_spec P) kphi) phi.
 Proof.
   intros. setoid_rewrite bind_trigger.
   unfold padded_refines in *. rewrite pad_bind, pad_vis.
@@ -113,10 +113,10 @@ Qed.
 Definition assume_spec {E} (P : Type) : itree_spec E unit :=
   trigger (@Spec_forall E P);; Ret tt.
 
-Lemma padded_assume_pad_elim {E1 E2} RE REAns R1 R2 RR P
+Lemma padded_assume_pad_elim {E1 E2} RPre RPost R1 R2 RR P
       (phi : itree_spec E1 R1) (kphi : unit -> itree_spec E2 R2) :
-  (P -> padded_refines RE REAns RR phi (kphi tt)) ->
-  padded_refines RE REAns RR phi (ITree.bind (assume_spec P) kphi).
+  (P -> padded_refines RPre RPost RR phi (kphi tt)) ->
+  padded_refines RPre RPost RR phi (ITree.bind (assume_spec P) kphi).
 Proof.
   intros. setoid_rewrite bind_trigger.
   unfold padded_refines in *. rewrite pad_bind, pad_vis.
@@ -125,10 +125,10 @@ Proof.
   intros HP. specialize (H HP). constructor. pstep_reverse.
 Qed.
 
-Lemma padded_assume_pad_eliml {E1 E2} RE REAns R1 R2 RR P
+Lemma padded_assume_pad_eliml {E1 E2} RPre RPost R1 R2 RR P
       (phi : itree_spec E1 R1) (kphi : unit -> itree_spec E2 R2) :
-  P -> padded_refines RE REAns RR (kphi tt) phi ->
-  padded_refines RE REAns RR (ITree.bind (assume_spec P) kphi) phi.
+  P -> padded_refines RPre RPost RR (kphi tt) phi ->
+  padded_refines RPre RPost RR (ITree.bind (assume_spec P) kphi) phi.
 Proof.
   intros. setoid_rewrite bind_trigger.
   unfold padded_refines in *. rewrite pad_bind, pad_vis.
@@ -143,10 +143,10 @@ Definition spec_exists {E} (T : Type) : itree_spec E T :=
 
 
 (**)
-Lemma spec_exists_elim {E1 E2} S1 R2 S2 RE REAns RR (phi : itree_spec E1 S1)
+Lemma spec_exists_elim {E1 E2} S1 R2 S2 RPre RPost RR (phi : itree_spec E1 S1)
       (kphi : R2 -> itree_spec E2 S2) r :
-  refines RE REAns RR phi (kphi r) ->
-  refines RE REAns RR phi (ITree.bind (spec_exists R2) kphi).
+  refines RPre RPost RR phi (kphi r) ->
+  refines RPre RPost RR phi (ITree.bind (spec_exists R2) kphi).
 Proof.
   intros. unfold spec_exists. setoid_rewrite bind_trigger.
   pstep. econstructor. pstep_reverse.
@@ -155,10 +155,10 @@ Qed.
 Opaque assert_spec.
 
 (*maybe there is a simpler way to derive this proof from the previous one*)
-Lemma padded_spec_exists_elim {E1 E2} S1 R2 S2 RE REAns RR (phi : itree_spec E1 S1)
+Lemma padded_spec_exists_elim {E1 E2} S1 R2 S2 RPre RPost RR (phi : itree_spec E1 S1)
       (kphi : R2 -> itree_spec E2 S2) r :
-  padded_refines RE REAns RR phi (kphi r) ->
-  padded_refines RE REAns RR phi (ITree.bind (spec_exists R2) kphi).
+  padded_refines RPre RPost RR phi (kphi r) ->
+  padded_refines RPre RPost RR phi (ITree.bind (spec_exists R2) kphi).
 Proof.
   intros.  unfold padded_refines in *. rewrite pad_bind. setoid_rewrite pad_vis.
   rewrite bind_vis.
@@ -166,10 +166,10 @@ Proof.
   pstep. econstructor. Unshelve. all : auto. constructor. pstep_reverse.
 Qed.
 
-Lemma padded_spec_exists_eliml {E1 E2} S1 R2 S2 RE REAns RR (phi : itree_spec E1 S1)
+Lemma padded_spec_exists_eliml {E1 E2} S1 R2 S2 RPre RPost RR (phi : itree_spec E1 S1)
       (kphi : R2 -> itree_spec E2 S2) :
-  (forall r, padded_refines RE REAns RR (kphi r) phi) ->
-  padded_refines RE REAns RR (ITree.bind (spec_exists R2) kphi) phi .
+  (forall r, padded_refines RPre RPost RR (kphi r) phi) ->
+  padded_refines RPre RPost RR (ITree.bind (spec_exists R2) kphi) phi .
 Proof.
   intros.  unfold padded_refines in *. rewrite pad_bind. setoid_rewrite pad_vis.
   rewrite bind_vis.
@@ -191,19 +191,19 @@ Ltac assertsl := apply padded_assert_pad_eliml.
 Definition spec_forall {E} (T : Type) : itree_spec E T :=
   trigger (@Spec_forall E T).
 
-Lemma spec_forall_elim {E1 E2} S1 R2 S2 RE REAns RR (phi : itree_spec E1 S1)
+Lemma spec_forall_elim {E1 E2} S1 R2 S2 RPre RPost RR (phi : itree_spec E1 S1)
       (kphi : R2 -> itree_spec E2 S2) :
-  (forall r, refines RE REAns RR phi (kphi r)) ->
-  refines RE REAns RR phi (ITree.bind (spec_forall R2) kphi).
+  (forall r, refines RPre RPost RR phi (kphi r)) ->
+  refines RPre RPost RR phi (ITree.bind (spec_forall R2) kphi).
 Proof.
   intros. unfold spec_forall. rewrite bind_trigger.
   pstep. constructor. intros. pstep_reverse. apply H.
 Qed.
 
-Lemma padded_spec_forall_elim {E1 E2} S1 R2 S2 RE REAns RR (phi : itree_spec E1 S1)
+Lemma padded_spec_forall_elim {E1 E2} S1 R2 S2 RPre RPost RR (phi : itree_spec E1 S1)
       (kphi : R2 -> itree_spec E2 S2):
-  (forall r, padded_refines RE REAns RR phi (kphi r)) ->
-  padded_refines RE REAns RR phi (ITree.bind (spec_forall R2) kphi).
+  (forall r, padded_refines RPre RPost RR phi (kphi r)) ->
+  padded_refines RPre RPost RR phi (ITree.bind (spec_forall R2) kphi).
 Proof.
   intros.  unfold padded_refines in *. rewrite pad_bind. setoid_rewrite pad_vis.
   rewrite bind_vis.
@@ -212,10 +212,10 @@ Proof.
   apply H.
 Qed.
 
-Lemma padded_spec_forall_eliml {E1 E2} S1 R2 S2 RE REAns RR (phi : itree_spec E1 S1)
+Lemma padded_spec_forall_eliml {E1 E2} S1 R2 S2 RPre RPost RR (phi : itree_spec E1 S1)
       (kphi : R2 -> itree_spec E2 S2) r:
-  padded_refines RE REAns RR (kphi r) phi ->
-  padded_refines RE REAns RR (ITree.bind (spec_forall R2) kphi) phi.
+  padded_refines RPre RPost RR (kphi r) phi ->
+  padded_refines RPre RPost RR (ITree.bind (spec_forall R2) kphi) phi.
 Proof.
   intros.  unfold padded_refines in *. rewrite pad_bind. setoid_rewrite pad_vis.
   rewrite bind_vis.
@@ -365,7 +365,7 @@ Global Instance refines_proper_interp_mrec_spec E D R :
          (fun ctx => @interp_mrec_spec D E ctx R).
 Proof.
   repeat intro. subst. unfold padded_refines_eq in *.
-  eapply padded_refines_interp_mrec with (REInv := eqPreRel) (REAnsInv := eqPostRel) ; eauto.
+  eapply padded_refines_interp_mrec with (RPreInv := eqPreRel) (RPostInv := eqPostRel) ; eauto.
   - intros.
     eqPreRel_inv H1.
     eapply refines_monot; try eapply H.
@@ -389,8 +389,8 @@ Qed.
 
 
 (*
-Global Instance padded_refines_eq_bind_proper  E1 E2 RE REAns R1 R2 RR :
-  Proper (padded_refines_eq eq ==> eq ==> @padded_refines E1 E2 R1 R2 RE REAns RR) ITree.bind.
+Global Instance padded_refines_eq_bind_proper  E1 E2 RPre RPost R1 R2 RR :
+  Proper (padded_refines_eq eq ==> eq ==> @padded_refines E1 E2 R1 R2 RPre RPost RR) ITree.bind.
 *)
 (*from there there is a bit more *)
 

@@ -35,11 +35,11 @@ Hint Resolve monotone_conv_ref_ : paco.
 Definition conv_ref {E R} : itree_spec E R -> Prop := paco1 conv_ref_ bot1.
 
 
-Lemma conv_ref_ret_bind E1 E2 R1 S R2 RE REAns RR r (t2 : itree_spec E2 R2) :
+Lemma conv_ref_ret_bind E1 E2 R1 S R2 RPre RPost RR r (t2 : itree_spec E2 R2) :
   forall (t1 : itree_spec E2 S),
     conv_ref t1 ->
-    @refines E1 E2 R1 R2 RE REAns RR (Ret r) (t1 >> t2) ->
-    refines RE REAns RR (Ret r) t2.
+    @refines E1 E2 R1 R2 RPre RPost RR (Ret r) (t1 >> t2) ->
+    refines RPre RPost RR (Ret r) t2.
 Proof.
   intros t1 Ht1 Href. punfold Href. red in Href. cbn in Href.
   punfold Ht1. red in Ht1. pstep. red. cbn.
@@ -120,11 +120,11 @@ Proof.
   - inv Ht2. pclearbot. punfold H0.
 Qed.
 
-Lemma padded_conv_ref_ret_bind E1 E2 R1 S R2 RE REAns RR r (t2 : itree_spec E2 R2) :
+Lemma padded_conv_ref_ret_bind E1 E2 R1 S R2 RPre RPost RR r (t2 : itree_spec E2 R2) :
   forall (t1 : itree_spec E2 S),
     conv_ref t1 ->
-    @padded_refines E1 E2 R1 R2 RE REAns RR (Ret r) (t1 >> t2) ->
-    padded_refines RE REAns RR (Ret r) t2.
+    @padded_refines E1 E2 R1 R2 RPre RPost RR (Ret r) (t1 >> t2) ->
+    padded_refines RPre RPost RR (Ret r) t2.
 Proof.
   intros t1 Ht1. unfold padded_refines. setoid_rewrite pad_ret.
   setoid_rewrite pad_bind. intros. rewrite pad_eutt in Ht1. eapply conv_ref_ret_bind; eauto.

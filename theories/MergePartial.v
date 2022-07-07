@@ -14,19 +14,19 @@ Local Open Scope monad_scope.
 Open Scope list_scope.
 
 
-Lemma or_spec_l E1 E2 RE REAns R1 R2 RR (t1 t2 : itree_spec E1 R1) (t3 : itree_spec E2 R2) :
-  @padded_refines E1 E2 R1 R2 RE REAns RR t1 t3 ->
-  @padded_refines E1 E2 R1 R2 RE REAns RR t2 t3 ->
-  @padded_refines E1 E2 R1 R2 RE REAns RR (or_spec t1 t2) t3.
+Lemma or_spec_l E1 E2 RPre RPost R1 R2 RR (t1 t2 : itree_spec E1 R1) (t3 : itree_spec E2 R2) :
+  @padded_refines E1 E2 R1 R2 RPre RPost RR t1 t3 ->
+  @padded_refines E1 E2 R1 R2 RPre RPost RR t2 t3 ->
+  @padded_refines E1 E2 R1 R2 RPre RPost RR (or_spec t1 t2) t3.
 Proof.
   intros. unfold or_spec. unfold padded_refines in *.
   rewrite pad_vis. pstep. constructor. intros [ | ]; constructor; pstep_reverse.
 Qed.
 
-Lemma or_spec_r E1 E2 RE REAns R1 R2 RR (t1 : itree_spec E1 R1) (t2 t3: itree_spec E2 R2) :
-  (@padded_refines E1 E2 R1 R2 RE REAns RR t1 t2 \/
-  @padded_refines E1 E2 R1 R2 RE REAns RR t1 t3) ->
-  @padded_refines E1 E2 R1 R2 RE REAns RR t1 (or_spec t2 t3).
+Lemma or_spec_r E1 E2 RPre RPost R1 R2 RR (t1 : itree_spec E1 R1) (t2 t3: itree_spec E2 R2) :
+  (@padded_refines E1 E2 R1 R2 RPre RPost RR t1 t2 \/
+  @padded_refines E1 E2 R1 R2 RPre RPost RR t1 t3) ->
+  @padded_refines E1 E2 R1 R2 RPre RPost RR t1 (or_spec t2 t3).
 Proof.
   intros. unfold or_spec. unfold padded_refines in *.
   rewrite pad_vis. pstep.
@@ -74,19 +74,19 @@ Definition halve_spec_fix {E} : list nat -> itree_spec E (list nat * list nat) :
                ).
 
 
-Theorem padded_refines_ret E1 E2 R1 R2 RE REAns RR r1 r2 :
+Theorem padded_refines_ret E1 E2 R1 R2 RPre RPost RR r1 r2 :
   (RR r1 r2 : Prop) ->
-  @padded_refines E1 E2 R1 R2 RE REAns RR (Ret r1) (Ret r2).
+  @padded_refines E1 E2 R1 R2 RPre RPost RR (Ret r1) (Ret r2).
 Proof.
   intros Hr. red. repeat rewrite pad_ret. pstep. constructor. auto.
 Qed.
 
 Theorem padded_refines_vis E1 E2 R1 R2 A B
-        RE REAns RR (e1 : E1 A) (e2 : E2 B)
+        RPre RPost RR (e1 : E1 A) (e2 : E2 B)
         (k1 : A -> itree_spec E1 R1) (k2 : B -> itree_spec E2 R2) :
-  (RE A B e1 e2 : Prop) ->
-  (forall a b, (REAns A B e1 e2 a b : Prop) -> padded_refines RE REAns RR (k1 a) (k2 b)) ->
-  padded_refines RE REAns RR (Vis (Spec_vis e1) k1) (Vis (Spec_vis e2) k2).
+  (RPre A B e1 e2 : Prop) ->
+  (forall a b, (RPost A B e1 e2 a b : Prop) -> padded_refines RPre RPost RR (k1 a) (k2 b)) ->
+  padded_refines RPre RPost RR (Vis (Spec_vis e1) k1) (Vis (Spec_vis e2) k2).
 Proof.
   unfold padded_refines. setoid_rewrite pad_vis. intros.
   pstep. constructor; auto. intros. left. pstep. constructor.
@@ -101,13 +101,13 @@ Variant halve_call : forall A, callE (list nat) (list nat * list nat) A -> A -> 
 
 Lemma halve_correct' E l : padded_refines_eq eq (@halve E l) (halve_spec_fix l).
 Proof.
-  eapply padded_refines_monot with (RE1 := eqPreRel)
-                                   (REAns1 := eqPostRel)
+  eapply padded_refines_monot with (RPre1 := eqPreRel)
+                                   (RPost1 := eqPostRel)
                                    (RR1 := subEqPostRel halve_call _ _ (Call l) (Call l)); eauto.
   { intros [l1 l2] [l3 l4]. intros. inv PR. inj_existT. subst. auto. }
-  eapply padded_refines_mrec with (REInv := eqPreRel)
+  eapply padded_refines_mrec with (RPreInv := eqPreRel)
                                   (* in this post condition need to include *)
-                                  (REAnsInv := subEqPostRel halve_call).
+                                  (RPostInv := subEqPostRel halve_call).
   2 : constructor. intros.
   eqPreRel_inv H. clear l. destruct d2 as [l]. cbn.
   destruct l as [ | a [ | b l] ].
@@ -143,9 +143,9 @@ Proof.
 Qed.
 
 
-Global Instance padded_refines_eq_itree E1 E2 R1 R2 RE REAns RR
+Global Instance padded_refines_eq_itree E1 E2 R1 R2 RPre RPost RR
   : Proper (eq_itree eq ==> eq_itree eq ==> impl)
-           (@padded_refines E1 E2 R1 R2 RE REAns RR).
+           (@padded_refines E1 E2 R1 R2 RPre RPost RR).
 Proof.
   repeat intro. assert (x ≈ y). rewrite H. reflexivity.
   rewrite <- H2. assert (x0 ≈ y0). rewrite H0. reflexivity.
@@ -187,9 +187,9 @@ Proof.
 Qed.
 
 (*should be able to generalize this to cany concrete tree *)
-Lemma or_spec_r_Ret_inv E1 E2 R1 R2 RE REAns RR r t2 t3 :
-  @padded_refines E1 E2 R1 R2 RE REAns RR (Ret r) (or_spec t2 t3) ->
-  padded_refines RE REAns RR (Ret r) t2 \/ padded_refines RE REAns RR (Ret r) t3.
+Lemma or_spec_r_Ret_inv E1 E2 R1 R2 RPre RPost RR r t2 t3 :
+  @padded_refines E1 E2 R1 R2 RPre RPost RR (Ret r) (or_spec t2 t3) ->
+  padded_refines RPre RPost RR (Ret r) t2 \/ padded_refines RPre RPost RR (Ret r) t3.
 Proof.
   intros Hor. unfold padded_refines in *. setoid_rewrite pad_ret in Hor.
   setoid_rewrite pad_ret. setoid_rewrite pad_vis in Hor.
@@ -532,10 +532,10 @@ Section SpecFix.
   Proof.
     intros Hfix. apply partial_spec_fix_partial_spec'.
     intros Ha. specialize (Hfix Ha). etransitivity; eauto.
-    eapply padded_refines_monot with (RE1 := eqPreRel) (REAns1 := eqPostRel)
+    eapply padded_refines_monot with (RPre1 := eqPreRel) (RPost1 := eqPostRel)
     (RR1 := eqPostRel _ _ (Call a) (Call a)); auto.
     { intros. eqPostRel_inv PR. auto. }
-    eapply padded_refines_mrec with (REInv := eqPreRel).
+    eapply padded_refines_mrec with (RPreInv := eqPreRel).
     2 : constructor.
     intros. eqPreRel_inv H. clear Ha Hfix a. destruct d2.
     simpl. assumesr. intros Ha. assumesl. auto.
@@ -579,13 +579,13 @@ Lemma halve_spec_fix_correct' E l :
                                                    (fun l '(l1,l2) => Permutation l (l1 ++ l2) /\
                                (length l1 >= length l2 /\ (length l > length l1 \/ length l <= 1))) l).
 Proof.
-  eapply padded_refines_monot with (RE1 := eqPreRel)
-                                   (REAns1 := eqPostRel)
+  eapply padded_refines_monot with (RPre1 := eqPreRel)
+                                   (RPost1 := eqPostRel)
                                    (RR1 := subEqPostRel halve_call _ _ (Call l) (Call l)); eauto.
   { intros [l1 l2] [l3 l4]. intros. inv PR. inj_existT. subst. auto. }
-    eapply padded_refines_mrec with (REInv := eqPreRel)
+    eapply padded_refines_mrec with (RPreInv := eqPreRel)
                                   (* in this post condition need to include *)
-                                  (REAnsInv := subEqPostRel halve_call).
+                                  (RPostInv := subEqPostRel halve_call).
   2 : constructor. intros.
   eqPreRel_inv H. clear l. destruct d2 as [l]. cbn.
   destruct l as [ | a [ | b l] ].
@@ -664,7 +664,7 @@ Qed.
 (* I think I can save the rest for tomorrow*)
 
 (*
-Global Instance refines_proper_bind_RE E R RE REAns S :
+Global Instance refines_proper_bind_RPre E R RPre RPost S :
   Proper (@padded_refines E R R eq ==> pointwise_relation _ (padded_refines_eq eq) ==> @padded_refines_eq E S S eq) ITree.bind.
 Proof.
   repeat intro. subst. unfold padded_refines_eq in *. eapply padded_refines_bind; eauto.
@@ -674,14 +674,14 @@ Qed.
 
 (*do I need the proper instances? Probably *)
 
-Global Instance  padded_refines_eq_gen E1 E2 R1 R2 RE REAns RR : Proper (padded_refines_eq eq ==> flip (padded_refines_eq eq) ==> flip impl)
-                                                                (@padded_refines E1 E2 R1 R2 RE REAns RR).
+Global Instance  padded_refines_eq_gen E1 E2 R1 R2 RPre RPost RR : Proper (padded_refines_eq eq ==> flip (padded_refines_eq eq) ==> flip impl)
+                                                                (@padded_refines E1 E2 R1 R2 RPre RPost RR).
 Proof.
   intros t1 t2 Ht12 t3 t4 Ht43. red in Ht43. intro.
   unfold padded_refines_eq, padded_refines in *. rename H into H24.
-  specialize @refinesTrans with (E1 := E1) (E2 := E1) (E3 := E2) (RE1 := eqPreRel) (RE2 := RE) as Htrans.
+  specialize @refinesTrans with (E1 := E1) (E2 := E1) (E3 := E2) (RPre1 := eqPreRel) (RPre2 := RPre) as Htrans.
   eapply Htrans in Ht12; eauto; try apply pad_is_padded. clear Htrans.
-  specialize @refinesTrans with (E1 := E1) (E2 := E2) (E3 := E2) (RE1 := rcomposePreRel eqPreRel RE) (RE2 := eqPreRel) as Htrans.
+  specialize @refinesTrans with (E1 := E1) (E2 := E2) (E3 := E2) (RPre1 := rcomposePreRel eqPreRel RPre) (RPre2 := eqPreRel) as Htrans.
   eapply Htrans in Ht12; eauto; try apply pad_is_padded. eapply refines_monot; try eapply Ht12.
   { intros. destruct PR. destruct H. eqPreRel_inv H. eqPreRel_inv H0. auto. }
   { intros. econstructor. intros. destruct H. eqPreRel_inv H0.
@@ -695,10 +695,10 @@ Qed.
 
    *)
 
-Lemma or_spec_bind_l  E1 E2 R1 S R2 RE REAns RR (t1 t2 : itree_spec E1 S) (k : S -> itree_spec E1 R1) (t3 : itree_spec E2 R2) :
-  padded_refines RE REAns RR (ITree.bind t1 k) t3 ->
-  padded_refines RE REAns RR (ITree.bind t2 k) t3 ->
-  padded_refines RE REAns RR (ITree.bind (or_spec t1 t2) k) t3.
+Lemma or_spec_bind_l  E1 E2 R1 S R2 RPre RPost RR (t1 t2 : itree_spec E1 S) (k : S -> itree_spec E1 R1) (t3 : itree_spec E2 R2) :
+  padded_refines RPre RPost RR (ITree.bind t1 k) t3 ->
+  padded_refines RPre RPost RR (ITree.bind t2 k) t3 ->
+  padded_refines RPre RPost RR (ITree.bind (or_spec t1 t2) k) t3.
 Proof.
   unfold padded_refines. intros. setoid_rewrite bind_vis. setoid_rewrite pad_vis.
   pstep. constructor. intros [ | ]; constructor; pstep_reverse.

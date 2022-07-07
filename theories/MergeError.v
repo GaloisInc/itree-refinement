@@ -248,18 +248,18 @@ Definition sort_post (l1 l2 : list nat) :=
   sorted l2 /\
   Permutation l1 l2.
 
-Lemma padded_refines_rew_l {E1 E2 R1 R2 RE REAns RR}
+Lemma padded_refines_rew_l {E1 E2 R1 R2 RPre RPost RR}
       {t1 t2 : itree_spec E1 R1} {t3 : itree_spec E2 R2} :
   padded_refines_eq eq t1 t2 ->
-  padded_refines RE REAns RR t2 t3 ->
-  padded_refines RE REAns RR t1 t3.
+  padded_refines RPre RPost RR t2 t3 ->
+  padded_refines RPre RPost RR t1 t3.
 Proof. intros. rewrite H; eauto. Qed.
 
-Lemma padded_refines_rew_bind_l {E1 E2 R1 R2 A RE REAns RR}
+Lemma padded_refines_rew_bind_l {E1 E2 R1 R2 A RPre RPost RR}
       {t1 t2 : itree_spec E1 A} {k : A -> itree_spec E1 R1} {t3 : itree_spec E2 R2} :
   padded_refines_eq eq t1 t2 ->
-  padded_refines RE REAns RR (t2 >>= k) t3 ->
-  padded_refines RE REAns RR (t1 >>= k) t3.
+  padded_refines RPre RPost RR (t2 >>= k) t3 ->
+  padded_refines RPre RPost RR (t1 >>= k) t3.
 Proof. intros. rewrite H; eauto. Qed.
 
 Hint Extern 101 (padded_refines _ _ _ (halve ?l) _) =>
